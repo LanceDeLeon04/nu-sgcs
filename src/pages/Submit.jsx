@@ -8,7 +8,7 @@ import PublicShell from '../components/PublicShell.jsx'
 import { supabase, EVIDENCE_BUCKET } from '../supabaseClient'
 import {
   CATEGORIES, FEEDBACK_CATEGORIES, YEAR_LEVELS, COMPLAINT_NOTICE, subcategoriesOf, groupOf,
-  formatStudentId, isValidStudentId, isValidNuEmail, STUDENT_ID_HINT, NU_EMAIL_DOMAIN,
+  formatStudentId, isValidStudentId, isValidNuEmail, STUDENT_ID_HINT, NU_EMAIL_DOMAIN, NU_EMAIL_HINT,
 } from '../lib/constants.js'
 import { FeedbackNoticeText, Highlight } from '../components/NoticeText.jsx'
 import { hasProfanityIn } from '../lib/profanity.js'
@@ -132,10 +132,10 @@ function SubmitForm({ type }) {
     if (!anon && !f.complainant_name.trim()) return setError(isComplaint ? 'Please enter your full name.' : 'Please enter your name, or send the feedback anonymously.')
     if (isComplaint) {
       if (!isValidStudentId(f.student_id)) return setError(`Please enter your student ID in this format: ${STUDENT_ID_HINT}.`)
-      if (!isValidNuEmail(f.email)) return setError(`Please use your NU student email (@${NU_EMAIL_DOMAIN}).`)
+      if (!isValidNuEmail(f.email)) return setError(`Please use your NU email (${NU_EMAIL_HINT}).`)
     } else if (!anon) {
       if (f.student_id.trim() && !isValidStudentId(f.student_id)) return setError(`Student ID must follow this format: ${STUDENT_ID_HINT}.`)
-      if (f.email.trim() && !isValidNuEmail(f.email)) return setError(`Please use your NU student email (@${NU_EMAIL_DOMAIN}), or leave it blank.`)
+      if (f.email.trim() && !isValidNuEmail(f.email)) return setError(`Please use your NU email (${NU_EMAIL_HINT}), or leave it blank.`)
     }
     if (!isComplaint && strongLanguage) return setError('Your message contains language that is not allowed. Please rephrase it respectfully and try again.')
     if (!agree) return setError('Please confirm the statement at the bottom of the form.')
@@ -283,11 +283,11 @@ function SubmitForm({ type }) {
               <div><label className={label}>{isComplaint ? <>NU email (for Teams) <span className="text-red-500">*</span></> : 'Email (optional)'}</label>
                 <input type="email" inputMode="email" autoComplete="email" className={`${input} mt-1`} value={f.email} onChange={set('email')} maxLength={200}
                   placeholder={`yourname@${NU_EMAIL_DOMAIN}`} />
-                <p className="text-[11px] text-slate-400 mt-1">Only @{NU_EMAIL_DOMAIN} accounts are accepted.</p></div>
+                <p className="text-[11px] text-slate-400 mt-1">Only {NU_EMAIL_HINT} accounts are accepted.</p></div>
               <div><label className={label}>Student ID {isComplaint && <span className="text-red-500">*</span>}</label>
                 <input className={`${input} mt-1 font-mono`} value={f.student_id} onChange={setStudentId} maxLength={12} inputMode="numeric"
                   placeholder="20XX-XXXXXXX" autoComplete="off" />
-                <p className="text-[11px] text-slate-400 mt-1">Format: 20XX-XXXXXXX (7 digits after the hyphen).</p></div>
+                <p className="text-[11px] text-slate-400 mt-1">Format: 20XX-XXXXXX or 20XX-XXXXXXX (6 or 7 digits after the hyphen).</p></div>
               {isComplaint && (
                 <div><label className={label}>Contact number</label>
                   <input className={`${input} mt-1`} value={f.contact_no} onChange={set('contact_no')} maxLength={50} /></div>

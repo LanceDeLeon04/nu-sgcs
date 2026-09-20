@@ -95,9 +95,9 @@ export const isOverdue = (c) => c.type !== 'feedback' && OPEN_STATUSES.includes(
 
 
 /* ---------- Form validation rules ---------- */
-// Student ID: 20XX-XXXXXXX  (year, hyphen, 7 digits)
-export const STUDENT_ID_RE = /^20\d{2}-\d{7}$/
-export const STUDENT_ID_HINT = '20XX-XXXXXXX (e.g. 2024-0123456)'
+// Student ID: 20XX-XXXXXX or 20XX-XXXXXXX  (year, hyphen, 6 or 7 digits)
+export const STUDENT_ID_RE = /^20\d{2}-\d{6,7}$/
+export const STUDENT_ID_HINT = '20XX-XXXXXX or 20XX-XXXXXXX (e.g. 2024-123456)'
 export const isValidStudentId = (v) => STUDENT_ID_RE.test((v || '').trim())
 // Auto-formats as the student types: keeps digits only, inserts the hyphen after the 4th digit.
 export const formatStudentId = (v) => {
@@ -105,7 +105,9 @@ export const formatStudentId = (v) => {
   return d.length > 4 ? `${d.slice(0, 4)}-${d.slice(4)}` : d
 }
 
-// NU email: only @student.nu-laguna.edu.ph accounts are accepted.
-export const NU_EMAIL_DOMAIN = 'student.nu-laguna.edu.ph'
-export const NU_EMAIL_RE = /^[^@\s]+@student\.nu-laguna\.edu\.ph$/i
+// NU email: @students.nu-laguna.edu.ph (students) or @nu-laguna.edu.ph (staff / faculty).
+export const NU_EMAIL_DOMAINS = ['students.nu-laguna.edu.ph', 'nu-laguna.edu.ph']
+export const NU_EMAIL_DOMAIN = NU_EMAIL_DOMAINS[0] // used for the placeholder
+export const NU_EMAIL_HINT = NU_EMAIL_DOMAINS.map((d) => `@${d}`).join(' or ')
+export const NU_EMAIL_RE = /^[^@\s]+@(students\.)?nu-laguna\.edu\.ph$/i
 export const isValidNuEmail = (v) => NU_EMAIL_RE.test((v || '').trim())

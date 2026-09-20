@@ -1,8 +1,8 @@
 -- =====================================================================
 -- Council of Leaders Grievance System: migration
 --   1. 4 primary categories + sub-categories (complaints)
---   2. Student ID format   20XX-XXXXXXX
---   3. NU email only       @student.nu-laguna.edu.ph
+--   2. Student ID format   20XX-XXXXXX or 20XX-XXXXXXX (6-7 digits)
+--   3. NU email only       @students.nu-laguna.edu.ph or @nu-laguna.edu.ph
 --   4. Offensive-language filter (feedback = blocked, complaints = flagged for staff)
 --
 -- HOW TO RUN: Supabase Dashboard > SQL Editor > paste this whole file > Run.
@@ -130,11 +130,11 @@ begin
     raise exception 'Formal complaints require identification. To stay anonymous, submit Feedback instead.';
   end if;
   if v_name is null then raise exception 'Please provide your full name.'; end if;
-  if v_student !~ '^20[0-9]{2}-[0-9]{7}$' then
-    raise exception 'Student ID must follow this format: 20XX-XXXXXXX (e.g. 2024-0123456).';
+  if v_student !~ '^20[0-9]{2}-[0-9]{6,7}$' then
+    raise exception 'Student ID must follow this format: 20XX-XXXXXX or 20XX-XXXXXXX (e.g. 2024-123456).';
   end if;
-  if v_email is null or v_email !~* '^[^@[:space:]]+@student\.nu-laguna\.edu\.ph$' then
-    raise exception 'Please use your NU student email (@student.nu-laguna.edu.ph) so a representative can reach you on Microsoft Teams.';
+  if v_email is null or v_email !~* '^[^@[:space:]]+@(students\.)?nu-laguna\.edu\.ph$' then
+    raise exception 'Please use your NU email (@students.nu-laguna.edu.ph or @nu-laguna.edu.ph) so a representative can reach you on Microsoft Teams.';
   end if;
   if jsonb_typeof(coalesce(p->'attachments','[]'::jsonb)) <> 'array'
      or jsonb_array_length(coalesce(p->'attachments','[]'::jsonb)) > 3 then
@@ -213,11 +213,11 @@ begin
   end if;
   if not v_anon then
     if v_name is null then raise exception 'Please provide your name, or choose to send feedback anonymously.'; end if;
-    if v_student is not null and v_student !~ '^20[0-9]{2}-[0-9]{7}$' then
-      raise exception 'Student ID must follow this format: 20XX-XXXXXXX (e.g. 2024-0123456).';
+    if v_student is not null and v_student !~ '^20[0-9]{2}-[0-9]{6,7}$' then
+      raise exception 'Student ID must follow this format: 20XX-XXXXXX or 20XX-XXXXXXX (e.g. 2024-123456).';
     end if;
-    if v_email is not null and v_email !~* '^[^@[:space:]]+@student\.nu-laguna\.edu\.ph$' then
-      raise exception 'Please use your NU student email (@student.nu-laguna.edu.ph), or leave it blank.';
+    if v_email is not null and v_email !~* '^[^@[:space:]]+@(students\.)?nu-laguna\.edu\.ph$' then
+      raise exception 'Please use your NU email (@students.nu-laguna.edu.ph or @nu-laguna.edu.ph), or leave it blank.';
     end if;
   end if;
   -- Feedback is blocked (not just flagged) when it contains offensive language.
