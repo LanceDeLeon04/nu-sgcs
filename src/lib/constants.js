@@ -57,6 +57,68 @@ export const COMPLAINT_NOTICE =
 
 export const YEAR_LEVELS = ['1st Year', '2nd Year', '3rd Year', '4th Year', '5th Year', 'Graduate']
 
+/* Department -> Program/Strand list, shown as two linked dropdowns on the submission form. */
+export const DEPARTMENTS = [
+  {
+    name: 'Senior High School (SHS)',
+    programs: [
+      'Science, Technology, Engineering, and Mathematics (STEM)',
+      'Accountancy, Business, and Management (ABM)',
+      'Humanities and Social Sciences (HUMSS)',
+      'Sports Track',
+    ],
+  },
+  {
+    name: 'School of Engineering and Architecture (SEA)',
+    programs: [
+      'Bachelor of Science in Civil Engineering (BSCE)',
+      'Bachelor of Science in Computer Engineering (BSCpE)',
+      'Bachelor of Science in Architecture (BS Arch)',
+    ],
+  },
+  {
+    name: 'School of Computer Studies (SCS)',
+    programs: [
+      'Bachelor of Science in Computer Science (BSCS)',
+      'Bachelor of Science in Information Technology (BSIT)',
+      'Bachelor of Science in Information Systems (BSIS)',
+    ],
+  },
+  {
+    name: 'School of Accountancy and Business Management (SABM)',
+    programs: [
+      'Bachelor of Science in Accountancy (BSA)',
+      'Bachelor of Science in Accounting Information System (BSAIS)',
+      'Bachelor of Science in Business Administration, Major in Marketing and Advertising (BSBA-MA)',
+    ],
+  },
+  {
+    name: 'School of Arts and Sciences (SAS)',
+    programs: [
+      'Bachelor of Arts in Communication (BA Communication)',
+      'Bachelor of Science in Psychology (BS Psychology)',
+      'Bachelor of Science in Criminology (BS Criminology)',
+      'Bachelor of Multimedia Arts (BMA)',
+      'Bachelor of Science in Exercise and Sports Science, Major in Fitness and Sports Coaching (BSESS)',
+      'Bachelor of Science in Tourism Management (BSTM)',
+    ],
+  },
+  {
+    name: 'Graduate Studies',
+    programs: [
+      'Master in Management (MM)',
+      'Master in Information Technology (MIT)',
+      'Master of Arts in Education, Major in English (MAEd-English)',
+      'Master of Arts in Education, Major in Filipino (MAEd-Filipino)',
+      'Master of Arts in Education, Major in Special Education (MAEd-SPED)',
+      'Master of Arts in Education, Major in Educational Management (MAEd-EM)',
+      'Doctor of Education, Major in Educational Management (EdD-EM)',
+    ],
+  },
+]
+export const DEPARTMENT_NAMES = DEPARTMENTS.map((d) => d.name)
+export const programsOf = (department) => DEPARTMENTS.find((d) => d.name === department)?.programs || []
+
 export const STATUSES = {
   received:     { label: 'Received',     cls: 'bg-blue-50 text-blue-700 border-blue-200',       step: 0 },
   under_review: { label: 'Under Review', cls: 'bg-amber-50 text-amber-700 border-amber-200',    step: 1 },

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import {
   EyeOff, Paperclip, X, Send, Loader2, CheckCircle2, Copy, Check, AlertTriangle, ShieldCheck,
@@ -9,6 +9,7 @@ import { supabase, EVIDENCE_BUCKET } from '../supabaseClient'
 import {
   CATEGORIES, FEEDBACK_CATEGORIES, YEAR_LEVELS, COMPLAINT_NOTICE, subcategoriesOf, groupOf,
   formatStudentId, isValidStudentId, isValidNuEmail, STUDENT_ID_HINT, NU_EMAIL_DOMAIN, NU_EMAIL_HINT,
+  DEPARTMENT_NAMES, programsOf,
 } from '../lib/constants.js'
 import { FeedbackNoticeText, Highlight } from '../components/NoticeText.jsx'
 import { hasProfanityIn } from '../lib/profanity.js'
@@ -78,14 +79,26 @@ export function TypeChooser() {
 /* The form (feedback or complaint)                                    */
 /* ------------------------------------------------------------------ */
 const blank = {
-  is_anonymous: false, complainant_name: '', student_id: '', email: '', contact_no: '', program: '', year_level: '',
+  is_anonymous: false, complainant_name: '', student_id: '', email: '', contact_no: '', department: '', program: '', year_level: '',
   category: '', subcategory: '', subject: '', description: '', incident_date: '', incident_location: '', respondent: '', desired_outcome: '',
   website: '', // honeypot
 }
 
+// Draft autosave: remembers every text field across a refresh/accidental close.
+// Files can't be persisted (not serializable) and are always excluded.
+const draftKey = (type) => `gc_draft_${type}`
+const loadDraft = (type) => {
+  try {
+    const raw = localStorage.getItem(draftKey(type))
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    return { ...blank, ...parsed, website: '' } // never restore the honeypot
+  } catch { return null }
+}
+
 function SubmitForm({ type }) {
   const isComplaint = type === 'complaint'
-  const [f, setF] = useState(blank)
+  const [f, setF] = useState(() => loadDraft(type) || blank)
   const [files, setFiles] = useState([])
   const [agree, setAgree] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -93,8 +106,15 @@ function SubmitForm({ type }) {
   const [result, setResult] = useState(null) // tracking code (complaint) or reference (feedback)
   const [copied, setCopied] = useState(false)
 
+  // Autosave every field change to localStorage so a refresh (or an accidental
+  // close) doesn't lose what was typed. Cleared once the submission succeeds.
+  useEffect(() => {
+    try { localStorage.setItem(draftKey(type), JSON.stringify({ ...f, website: '' })) } catch { /* storage unavailable, ignore */ }
+  }, [f, type])
+
   const set = (k) => (e) => setF((p) => ({ ...p, [k]: e.target.value }))
   const setCategory = (e) => setF((p) => ({ ...p, category: e.target.value, subcategory: '' }))
+  const setDepartment = (e) => setF((p) => ({ ...p, department: e.target.value, program: '' }))
   const setStudentId = (e) => setF((p) => ({ ...p, student_id: formatStudentId(e.target.value) }))
   const today = new Date().toISOString().slice(0, 10)
   const anon = !isComplaint && f.is_anonymous
@@ -102,6 +122,7 @@ function SubmitForm({ type }) {
   const minDesc = isComplaint ? 20 : 10
   const subs = isComplaint ? subcategoriesOf(f.category) : []
   const group = isComplaint ? groupOf(f.category) : null
+  const programs = programsOf(f.department)
   // Feedback: strong language is blocked. Complaints: allowed (people may need to quote what was said) but flagged for staff.
   const strongLanguage = useMemo(
     () => hasProfanityIn(f.subject, f.description, f.respondent, f.desired_outcome),
@@ -168,6 +189,7 @@ function SubmitForm({ type }) {
       }
       if (rpcErr) throw new Error(rpcErr.message)
       setResult(data)
+      try { localStorage.removeItem(draftKey(type)) } catch { /* ignore */ }
       if (isComplaint && f.email) {
         notifyByEmail({
           type: 'confirmation',
@@ -302,8 +324,16 @@ function SubmitForm({ type }) {
                 <div><label className={label}>Contact number</label>
                   <input className={`${input} mt-1`} value={f.contact_no} onChange={set('contact_no')} maxLength={50} /></div>
               )}
-              <div><label className={label}>Program / Course</label>
-                <input className={`${input} mt-1`} value={f.program} onChange={set('program')} maxLength={150} /></div>
+              <div><label className={label}>Department</label>
+                <select className={`${input} mt-1`} value={f.department} onChange={setDepartment}>
+                  <option value="">Select a department…</option>
+                  {DEPARTMENT_NAMES.map((d) => <option key={d}>{d}</option>)}
+                </select></div>
+              <div><label className={label}>Program {f.department === 'Senior High School (SHS)' ? '/ Strand' : '/ Course'}</label>
+                <select className={`${input} mt-1 disabled:bg-slate-50 disabled:text-slate-400`} value={f.program} onChange={set('program')} disabled={!f.department}>
+                  <option value="">{f.department ? 'Select…' : 'Choose a department first'}</option>
+                  {programs.map((p) => <option key={p}>{p}</option>)}
+                </select></div>
               <div><label className={label}>Year level</label>
                 <select className={`${input} mt-1`} value={f.year_level} onChange={set('year_level')}>
                   <option value="">Select…</option>
