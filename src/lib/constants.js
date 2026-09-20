@@ -1,20 +1,35 @@
 export const APP_NAME = 'Council of Leaders'
 export const APP_SUBTITLE = 'Student Grievance and Complaints System'
 
-// Must match the list validated in gc_submit_complaint() in schema.sql
-export const CATEGORIES = [
-  'Academic Concern',
-  'Instructor / Faculty Conduct',
-  'Student Council / Officer Conduct',
-  'Student Organization Concern',
-  'Harassment or Bullying',
-  'Discrimination',
-  'Facilities & Services',
-  'Fees & Financial Concern',
-  'Office / Administrative Service',
-  'Safety & Security',
-  'Other',
+// Complaint categories: 4 primary groups, each with sub-categories.
+// Must match gc_submit_complaint() in migration_categories_validation.sql
+export const CATEGORY_GROUPS = [
+  {
+    name: 'Academic Concerns',
+    description: 'Issues related to coursework, exams, grading, or any academic-related matters.',
+    subs: ['Academic Concern', 'Instructor / Faculty Conduct'],
+  },
+  {
+    name: 'Student Welfare',
+    description: "Matters regarding students' well-being, safety, and support services.",
+    subs: ['Harassment or Bullying', 'Discrimination', 'Safety & Security'],
+  },
+  {
+    name: 'Administrative Issues',
+    description: "Concerns related to the institution's management, policies, or processes.",
+    subs: ['Facilities & Services', 'Fees & Financial Concern', 'Office / Administrative Service'],
+  },
+  {
+    name: 'Others',
+    description: 'Issues outside academic/admin concerns.',
+    subs: ['Student Council / Officer Conduct', 'Student Organization Concern', 'Other'],
+  },
 ]
+export const CATEGORIES = CATEGORY_GROUPS.map((g) => g.name)
+export const subcategoriesOf = (primary) => CATEGORY_GROUPS.find((g) => g.name === primary)?.subs || []
+export const groupOf = (primary) => CATEGORY_GROUPS.find((g) => g.name === primary) || null
+// "Student Welfare › Discrimination" (feedback rows have no sub-category)
+export const categoryLabel = (c) => (c?.subcategory ? `${c.category} › ${c.subcategory}` : c?.category || '')
 
 // Categories for FEEDBACK (must match gc_submit_feedback() in schema.sql)
 export const FEEDBACK_CATEGORIES = [
@@ -77,3 +92,20 @@ export const fmtDateTime = (d) =>
 export const daysOpen = (c) =>
   Math.floor((Date.now() - new Date(c.submitted_at).getTime()) / 86400000)
 export const isOverdue = (c) => c.type !== 'feedback' && OPEN_STATUSES.includes(c.status) && daysOpen(c) > OVERDUE_DAYS
+
+
+/* ---------- Form validation rules ---------- */
+// Student ID: 20XX-XXXXXXX  (year, hyphen, 7 digits)
+export const STUDENT_ID_RE = /^20\d{2}-\d{7}$/
+export const STUDENT_ID_HINT = '20XX-XXXXXXX (e.g. 2024-0123456)'
+export const isValidStudentId = (v) => STUDENT_ID_RE.test((v || '').trim())
+// Auto-formats as the student types: keeps digits only, inserts the hyphen after the 4th digit.
+export const formatStudentId = (v) => {
+  const d = (v || '').replace(/\D/g, '').slice(0, 11)
+  return d.length > 4 ? `${d.slice(0, 4)}-${d.slice(4)}` : d
+}
+
+// NU email: only @student.nu-laguna.edu.ph accounts are accepted.
+export const NU_EMAIL_DOMAIN = 'student.nu-laguna.edu.ph'
+export const NU_EMAIL_RE = /^[^@\s]+@student\.nu-laguna\.edu\.ph$/i
+export const isValidNuEmail = (v) => NU_EMAIL_RE.test((v || '').trim())

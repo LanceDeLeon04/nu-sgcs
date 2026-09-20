@@ -1,11 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { Search, EyeOff, Paperclip } from 'lucide-react'
+import { Search, EyeOff, Paperclip, AlertTriangle } from 'lucide-react'
 import Navbar from '../../components/Navbar.jsx'
 import { StatusBadge, PriorityBadge, TypeBadge } from '../../components/StatusBadge.jsx'
 import { supabase } from '../../supabaseClient'
 import { useAuth } from '../../lib/auth.jsx'
-import { STATUSES, STATUS_KEYS, COMPLAINT_STATUS_KEYS, FEEDBACK_STATUS_KEYS, CATEGORIES, FEEDBACK_CATEGORIES, PRIORITIES, OPEN_STATUSES, fmtDate, isOverdue, daysOpen } from '../../lib/constants.js'
+import { STATUSES, STATUS_KEYS, COMPLAINT_STATUS_KEYS, FEEDBACK_STATUS_KEYS, CATEGORIES, FEEDBACK_CATEGORIES, PRIORITIES, OPEN_STATUSES, categoryLabel, fmtDate, isOverdue, daysOpen } from '../../lib/constants.js'
 
 const sel = 'border border-slate-200 rounded-xl px-3 py-2 text-sm bg-white outline-none focus:ring-2 focus:ring-nublue-500'
 
@@ -32,7 +32,7 @@ export default function Complaints() {
     (async () => {
       const [{ data: c }, { data: s }] = await Promise.all([
         supabase.from('gc_complaints')
-          .select('id, type, reference_no, subject, category, status, priority, assigned_to, forwarded_to, is_anonymous, complainant_name, respondent, submitted_at, gc_attachments(id)')
+          .select('id, type, reference_no, subject, category, subcategory, flagged_language, status, priority, assigned_to, forwarded_to, is_anonymous, complainant_name, respondent, submitted_at, gc_attachments(id)')
           .order('submitted_at', { ascending: false }).limit(2000),
         supabase.from('gc_staff').select('user_id, full_name'),
       ])
@@ -56,7 +56,7 @@ export default function Complaints() {
       if (assignee === 'none' && r.assigned_to) return false
       if (!['all', 'me', 'none'].includes(assignee) && r.assigned_to !== assignee) return false
       if (needle) {
-        const hay = [r.reference_no, r.subject, r.complainant_name, r.respondent, r.category].filter(Boolean).join(' ').toLowerCase()
+        const hay = [r.reference_no, r.subject, r.complainant_name, r.respondent, r.category, r.subcategory].filter(Boolean).join(' ').toLowerCase()
         if (!hay.includes(needle)) return false
       }
       return true
@@ -122,9 +122,14 @@ export default function Complaints() {
                       {r.status === 'received' && <span className="w-2 h-2 rounded-full bg-nublue-500" title="New" />}
                       <TypeBadge type={r.type} />
                       <p className="font-semibold text-sm text-slate-800 truncate">{r.subject}</p>
+                      {r.flagged_language && (
+                        <span title="Strong language detected" className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-800 bg-amber-100 border border-amber-300 rounded-full px-1.5 py-0.5">
+                          <AlertTriangle size={10} /> Language
+                        </span>
+                      )}
                     </div>
                     <p className="text-xs text-slate-400 mt-1">
-                      <span className="font-mono">{r.reference_no}</span> · {r.category} · {fmtDate(r.submitted_at)}
+                      <span className="font-mono">{r.reference_no}</span> · {categoryLabel(r)} · {fmtDate(r.submitted_at)}
                     </p>
                     <p className="text-[11px] text-slate-400 mt-1 flex items-center gap-3 flex-wrap">
                       <span className="flex items-center gap-1">

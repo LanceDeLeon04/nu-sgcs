@@ -1,14 +1,14 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { ArrowLeft, Paperclip, Download, EyeOff, Lock, Globe, Send, Loader2, Trash2, Copy, Check, Save, Star, Users, Forward } from 'lucide-react'
+import { ArrowLeft, Paperclip, Download, EyeOff, Lock, Globe, Send, Loader2, Trash2, Copy, Check, Save, Star, Users, Forward, AlertTriangle } from 'lucide-react'
 import Navbar from '../../components/Navbar.jsx'
 import { StatusBadge, PriorityBadge, TypeBadge } from '../../components/StatusBadge.jsx'
 import { supabase, EVIDENCE_BUCKET } from '../../supabaseClient'
 import { useAuth } from '../../lib/auth.jsx'
-import { STATUSES, COMPLAINT_STATUS_KEYS, FEEDBACK_STATUS_KEYS, PRIORITIES, fmtDate, fmtDateTime, isOverdue, daysOpen } from '../../lib/constants.js'
+import { STATUSES, COMPLAINT_STATUS_KEYS, FEEDBACK_STATUS_KEYS, PRIORITIES, categoryLabel, fmtDate, fmtDateTime, isOverdue, daysOpen } from '../../lib/constants.js'
 
-const sel = 'w-full border border-slate-200 rounded-xl px-3 py-2 text-sm bg-white outline-none focus:ring-2 focus:ring-nublue-500'
-const lbl = 'text-[11px] font-semibold text-slate-400 uppercase tracking-wide'
+const sel = 'w-full border border-slate-300 rounded-xl px-3 py-2 text-sm text-slate-900 placeholder:text-slate-700 bg-white outline-none focus:ring-2 focus:ring-nublue-500'
+const lbl = 'text-xs font-bold text-slate-700 uppercase tracking-wide'
 
 function Field({ label, children }) {
   if (!children) return null
@@ -106,8 +106,8 @@ export default function ComplaintDetail() {
     try { await navigator.clipboard.writeText(c.tracking_code); setCopied(true); setTimeout(() => setCopied(false), 1500) } catch { /* ignore */ }
   }
 
-  if (notFound) return (<div><Navbar title="Complaint" /><p className="p-8 text-sm text-slate-500">Complaint not found (or you don't have access).</p></div>)
-  if (!c) return (<div><Navbar title="Complaint" /><p className="p-8 text-sm text-slate-400">Loading…</p></div>)
+  if (notFound) return (<div><Navbar title="Complaint" /><p className="p-8 text-sm text-slate-700">Complaint not found (or you don't have access).</p></div>)
+  if (!c) return (<div><Navbar title="Complaint" /><p className="p-8 text-sm text-slate-600">Loading…</p></div>)
 
   const isFeedback = c.type === 'feedback'
   const kindNow = isFeedback ? 'internal_note' : kind
@@ -122,7 +122,7 @@ export default function ComplaintDetail() {
     <div>
       <Navbar title={c.reference_no} crumbs={[]} />
       <div className="p-8">
-        <Link to="/staff/complaints" className="inline-flex items-center gap-1 text-xs font-semibold text-slate-400 hover:text-nublue-600 mb-4 transition">
+        <Link to="/staff/complaints" className="inline-flex items-center gap-1 text-xs font-semibold text-slate-600 hover:text-nublue-600 mb-4 transition">
           <ArrowLeft size={13} /> All complaints
         </Link>
 
@@ -134,9 +134,14 @@ export default function ComplaintDetail() {
             <div className="bg-white rounded-2xl border border-slate-100 card-glow p-6">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className={`${lbl} flex items-center gap-2`}><TypeBadge type={c.type} /> {c.category}</p>
+                  <p className={`${lbl} flex items-center gap-2`}><TypeBadge type={c.type} /> {categoryLabel(c)}</p>
+                  {c.flagged_language && (
+                    <p className="mt-1 inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 bg-amber-100 border border-amber-300 rounded-full px-2 py-0.5">
+                      <AlertTriangle size={11} /> Strong language detected in this submission
+                    </p>
+                  )}
                   <h2 className="text-lg font-bold text-slate-800 mt-0.5 break-words">{c.subject}</h2>
-                  <p className="text-xs text-slate-400 mt-1">
+                  <p className="text-xs text-slate-600 mt-1">
                     Submitted {fmtDateTime(c.submitted_at)}
                     {isOverdue(c) && <span className="text-red-500 font-semibold"> · {daysOpen(c)} days open</span>}
                   </p>
@@ -162,7 +167,7 @@ export default function ComplaintDetail() {
                         <button onClick={() => openFile(a)}
                           className="w-full flex items-center justify-between gap-2 bg-slate-50 hover:bg-nublue-50 border border-slate-100 rounded-lg px-3 py-2 text-sm text-left transition">
                           <span className="flex items-center gap-2 min-w-0"><Paperclip size={14} className="text-nublue-500 shrink-0" /><span className="truncate">{a.file_name}</span></span>
-                          <Download size={14} className="text-slate-400 shrink-0" />
+                          <Download size={14} className="text-slate-600 shrink-0" />
                         </button>
                       </li>
                     ))}
@@ -184,14 +189,14 @@ export default function ComplaintDetail() {
                       <div className="min-w-0 flex-1">
                         <p className="text-sm text-slate-700">
                           <span className="font-semibold">{describe(u)}</span>
-                          <span className="text-slate-400"> · {u.author_name || 'System'}</span>
+                          <span className="text-slate-600"> · {u.author_name || 'System'}</span>
                           {note && <span className="ml-2 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-1.5 py-0.5"><Lock size={9} /> Internal</span>}
                         </p>
                         {message && u.message && (
                           <p className={`text-sm mt-1 whitespace-pre-wrap rounded-xl px-3 py-2 border ${note ? 'bg-amber-50 border-amber-100 text-amber-900' : 'bg-slate-50 border-slate-100 text-slate-700'}`}>{u.message}</p>
                         )}
-                        {!message && u.message && u.kind !== 'submitted' && <p className="text-xs text-slate-500">{u.message}</p>}
-                        <p className="text-[11px] text-slate-400 mt-0.5">{fmtDateTime(u.created_at)}</p>
+                        {!message && u.message && u.kind !== 'submitted' && <p className="text-xs text-slate-700">{u.message}</p>}
+                        <p className="text-[11px] text-slate-600 mt-0.5">{fmtDateTime(u.created_at)}</p>
                       </div>
                     </li>
                   )
@@ -200,15 +205,15 @@ export default function ComplaintDetail() {
 
               <form onSubmit={post} className="mt-6 pt-5 border-t border-slate-100">
                 {isFeedback ? (
-                  <p className="text-xs text-slate-500 mb-2 flex items-center gap-1.5"><Lock size={12} className="text-amber-500" /> Internal note — feedback isn't visible to the sender, so use notes to record forwarding and follow-ups.</p>
+                  <p className="text-xs text-slate-700 mb-2 flex items-center gap-1.5"><Lock size={12} className="text-amber-500" /> Internal note — feedback isn't visible to the sender, so use notes to record forwarding and follow-ups.</p>
                 ) : (
                 <div className="flex gap-2 mb-2">
                   <button type="button" onClick={() => setKind('public_response')}
-                    className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border transition ${kind === 'public_response' ? 'bg-nublue-600 text-white border-nublue-600' : 'text-slate-500 border-slate-200 hover:bg-slate-50'}`}>
+                    className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border transition ${kind === 'public_response' ? 'bg-nublue-600 text-white border-nublue-600' : 'text-slate-700 border-slate-200 hover:bg-slate-50'}`}>
                     <Globe size={12} /> Reply to complainant
                   </button>
                   <button type="button" onClick={() => setKind('internal_note')}
-                    className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border transition ${kind === 'internal_note' ? 'bg-amber-500 text-white border-amber-500' : 'text-slate-500 border-slate-200 hover:bg-slate-50'}`}>
+                    className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border transition ${kind === 'internal_note' ? 'bg-amber-500 text-white border-amber-500' : 'text-slate-700 border-slate-200 hover:bg-slate-50'}`}>
                     <Lock size={12} /> Internal note
                   </button>
                 </div>
@@ -255,7 +260,7 @@ export default function ComplaintDetail() {
                   ))}
                 </select>
                 <div className="flex items-center justify-between mt-1.5">
-                  <p className="text-[11px] text-slate-400">{assignee ? `Currently: ${assignee.full_name}` : 'Nobody is handling this yet.'}</p>
+                  <p className="text-[11px] text-slate-600">{assignee ? `Currently: ${assignee.full_name}` : 'Nobody is handling this yet.'}</p>
                   {c.assigned_to !== session.user.id && (
                     <button type="button" disabled={busy} onClick={() => save({ assigned_to: session.user.id })}
                       className="text-[11px] font-semibold text-nublue-600 hover:text-nublue-800 disabled:opacity-50">Assign to me</button>
@@ -275,7 +280,7 @@ export default function ComplaintDetail() {
             <div className="bg-white rounded-2xl border border-slate-100 card-glow p-5 space-y-3">
               <h3 className="font-bold text-slate-800">{isFeedback ? 'Sender' : 'Complainant'}</h3>
               {c.is_anonymous ? (
-                <p className="text-sm text-slate-500 flex items-center gap-2"><EyeOff size={15} /> Sent anonymously — no personal details on record.</p>
+                <p className="text-sm text-slate-700 flex items-center gap-2"><EyeOff size={15} /> Sent anonymously — no personal details on record.</p>
               ) : (<>
                 <Field label="Name">{c.complainant_name}</Field>
                 <Field label="Email">{c.email}</Field>
@@ -289,7 +294,7 @@ export default function ComplaintDetail() {
                   </a>
                 )}
               </>)}
-              {!isFeedback && <p className="text-[11px] text-slate-400">The complainant was told a representative may contact them via Microsoft Teams to confirm the details.</p>}
+              {!isFeedback && <p className="text-[11px] text-slate-600">The complainant was told a representative may contact them via Microsoft Teams to confirm the details.</p>}
               {c.satisfaction_rating && (
                 <div className="pt-3 border-t border-slate-100">
                   <p className={lbl}>Complainant feedback</p>

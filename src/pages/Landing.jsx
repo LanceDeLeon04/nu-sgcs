@@ -4,7 +4,8 @@ import { FilePlus2, Search, LogIn, EyeOff, KeyRound, ShieldCheck, ClipboardCheck
 import Brand from '../components/Brand.jsx'
 import Footer from '../components/Footer.jsx'
 import ChatWidget from '../components/ChatWidget.jsx'
-import { APP_NAME, FEEDBACK_NOTICE, COMPLAINT_NOTICE } from '../lib/constants.js'
+import { APP_NAME, COMPLAINT_NOTICE } from '../lib/constants.js'
+import { FeedbackNoticeText } from '../components/NoticeText.jsx'
 
 const steps = [
   { icon: ClipboardCheck, title: 'Submit', text: 'Describe your concern, identify yourself and attach evidence.' },
@@ -94,7 +95,7 @@ export default function Landing() {
                 <p className="text-[11px] font-semibold text-nublue-600 flex items-center gap-1"><EyeOff size={11} /> Anonymous option</p>
               </div>
             </div>
-            <p className="text-sm text-slate-600 leading-relaxed">{FEEDBACK_NOTICE}</p>
+            <p className="text-sm text-slate-600 leading-relaxed"><FeedbackNoticeText /></p>
             <Link to="/submit/feedback" className="inline-block mt-4 text-sm font-bold text-nublue-600 hover:text-nublue-800">Give feedback →</Link>
           </div>
           <div className="bg-white rounded-2xl border border-slate-100 card-glow p-6">
