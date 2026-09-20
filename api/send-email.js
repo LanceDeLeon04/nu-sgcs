@@ -54,7 +54,7 @@ function wrap({ logoUrl, eyebrow, heading, bodyHtml, code, trackUrl }) {
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td valign="middle" style="width:48px;">
-                    ${logoUrl ? `<img src="${logoUrl}" width="40" height="40" alt="" style="display:block;border-radius:8px;background:#fff;padding:4px;" />` : ''}
+                    ${logoUrl ? `<img src="${logoUrl}" width="40" height="40" alt="COL" border="0" style="display:block;width:40px;height:40px;border-radius:8px;background:#fff;padding:4px;" />` : ''}
                   </td>
                   <td valign="middle" style="padding-left:12px;">
                     <p style="margin:0;color:${NUGOLD};font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;">${escapeHtml(eyebrow)}</p>
@@ -199,8 +199,10 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'A valid recipient email is required.' })
   }
 
+  // favicon.png (128x128, small + already proven to load as the browser tab icon)
+  // is far more reliable across email clients than the large 1400x729 COLLogo.png.
   const host = req.headers['x-forwarded-host'] || req.headers.host
-  const logoUrl = host ? `https://${host}/COLLogo.png` : null
+  const logoUrl = host ? `https://${host}/favicon.png` : null
 
   const msg = buildMessage(type, body, logoUrl)
   if (!msg) return res.status(400).json({ error: 'Unknown email type.' })
