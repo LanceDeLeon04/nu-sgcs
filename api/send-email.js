@@ -40,7 +40,7 @@ function nl2br(s = '') {
 // Shared, table-based HTML shell (works across Gmail/Outlook/etc.) with the
 // NU Blue header, logo, a white content card, and a footer with the
 // tracking code + CTA link.
-function wrap({ logoUrl, eyebrow, heading, bodyHtml, code, trackUrl }) {
+function wrap({ eyebrow, heading, bodyHtml, code, trackUrl }) {
   return `<!doctype html>
 <html>
   <body style="margin:0;padding:0;background:#eef2f7;font-family:Segoe UI,Arial,Helvetica,sans-serif;">
@@ -54,7 +54,9 @@ function wrap({ logoUrl, eyebrow, heading, bodyHtml, code, trackUrl }) {
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td valign="middle" style="width:48px;">
-                    ${logoUrl ? `<img src="${logoUrl}" width="40" height="40" alt="COL" border="0" style="display:block;width:40px;height:40px;border-radius:8px;background:#fff;padding:4px;" />` : ''}
+                    <table role="presentation" cellpadding="0" cellspacing="0" width="40" height="40" style="width:40px;height:40px;background:${NUGOLD};border-radius:10px;">
+                      <tr><td align="center" valign="middle" style="width:40px;height:40px;color:${NUBLUE_DARK};font-size:16px;font-weight:800;font-family:Georgia,'Times New Roman',serif;letter-spacing:-0.02em;">CoL</td></tr>
+                    </table>
                   </td>
                   <td valign="middle" style="padding-left:12px;">
                     <p style="margin:0;color:${NUGOLD};font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;">${escapeHtml(eyebrow)}</p>
@@ -112,7 +114,7 @@ function wrap({ logoUrl, eyebrow, heading, bodyHtml, code, trackUrl }) {
 
 // Builds the subject + HTML body for each notification type.
 // `p` is the payload sent from the client (see src/lib/email.js).
-function buildMessage(type, p, logoUrl) {
+function buildMessage(type, p) {
   const name = escapeHtml(p.name || 'Student')
   const code = p.trackingCode || ''
   const trackUrl = p.trackUrl || null
@@ -121,7 +123,7 @@ function buildMessage(type, p, logoUrl) {
     return {
       subject: `We received your complaint (${code})`,
       html: wrap({
-        logoUrl, eyebrow: 'Complaint received', heading: 'Your complaint has been received',
+        eyebrow: 'Complaint received', heading: 'Your complaint has been received',
         code, trackUrl,
         bodyHtml: `
           <p style="margin:0 0 12px;">Hi ${name},</p>
@@ -144,7 +146,7 @@ function buildMessage(type, p, logoUrl) {
     return {
       subject: `Your complaint status changed to "${p.statusLabel}" (${code})`,
       html: wrap({
-        logoUrl, eyebrow: 'Status update', heading: 'Your complaint status has been updated',
+        eyebrow: 'Status update', heading: 'Your complaint status has been updated',
         code, trackUrl,
         bodyHtml: `
           <p style="margin:0 0 14px;">Hi ${name},</p>
@@ -159,7 +161,7 @@ function buildMessage(type, p, logoUrl) {
     return {
       subject: `A representative replied to your complaint (${code})`,
       html: wrap({
-        logoUrl, eyebrow: 'New reply', heading: 'A representative replied to your complaint',
+        eyebrow: 'New reply', heading: 'A representative replied to your complaint',
         code, trackUrl,
         bodyHtml: `
           <p style="margin:0 0 14px;">Hi ${name},</p>
@@ -199,12 +201,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'A valid recipient email is required.' })
   }
 
-  // favicon.png (128x128, small + already proven to load as the browser tab icon)
-  // is far more reliable across email clients than the large 1400x729 COLLogo.png.
-  const host = req.headers['x-forwarded-host'] || req.headers.host
-  const logoUrl = host ? `https://${host}/favicon.png` : null
-
-  const msg = buildMessage(type, body, logoUrl)
+  const msg = buildMessage(type, body)
   if (!msg) return res.status(400).json({ error: 'Unknown email type.' })
 
   try {
