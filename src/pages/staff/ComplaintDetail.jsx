@@ -6,6 +6,7 @@ import { StatusBadge, PriorityBadge, TypeBadge } from '../../components/StatusBa
 import { supabase, EVIDENCE_BUCKET } from '../../supabaseClient'
 import { useAuth } from '../../lib/auth.jsx'
 import { STATUSES, COMPLAINT_STATUS_KEYS, FEEDBACK_STATUS_KEYS, PRIORITIES, categoryLabel, fmtDate, fmtDateTime, isOverdue, daysOpen } from '../../lib/constants.js'
+import { notifyByEmail } from '../../lib/email.js'
 
 const sel = 'w-full border border-slate-300 rounded-xl px-3 py-2 text-sm text-slate-900 placeholder:text-slate-700 bg-white outline-none focus:ring-2 focus:ring-nublue-500'
 const lbl = 'text-xs font-bold text-slate-700 uppercase tracking-wide'
@@ -67,12 +68,23 @@ export default function ComplaintDetail() {
     return true
   }
 
-  const changeStatus = (status) => {
+  const changeStatus = async (status) => {
     if (['resolved', 'dismissed', 'closed'].includes(status) && !summary.trim() && !c.resolution_summary) {
       setErr('Write an outcome / resolution summary first — the complainant sees it when a complaint is resolved, closed or dismissed.')
       return
     }
-    save({ status, resolution_summary: summary.trim() || null })
+    const ok = await save({ status, resolution_summary: summary.trim() || null })
+    if (ok && c.type !== 'feedback' && c.email) {
+      notifyByEmail({
+        type: 'status',
+        to: c.email,
+        name: c.complainant_name,
+        trackingCode: c.tracking_code,
+        trackUrl: `${window.location.origin}/track/${c.tracking_code}`,
+        statusLabel: STATUSES[status]?.label || status,
+        summary: summary.trim() || c.resolution_summary || null,
+      })
+    }
   }
 
   const openFile = async (a) => {
@@ -84,13 +96,25 @@ export default function ComplaintDetail() {
   const post = async (e) => {
     e.preventDefault()
     if (!note.trim()) return
+    const messageText = note.trim()
+    const effectiveKind = c.type === 'feedback' ? 'internal_note' : kind
     setPosting(true); setErr('')
     const { error } = await supabase.from('gc_updates').insert({
       complaint_id: id, author_id: session.user.id, author_type: 'staff', author_name: staff.full_name,
-      kind: c.type === 'feedback' ? 'internal_note' : kind, message: note.trim(),
+      kind: effectiveKind, message: messageText,
     })
     setPosting(false)
     if (error) return setErr(error.message)
+    if (effectiveKind === 'public_response' && c.email) {
+      notifyByEmail({
+        type: 'reply',
+        to: c.email,
+        name: c.complainant_name,
+        trackingCode: c.tracking_code,
+        trackUrl: `${window.location.origin}/track/${c.tracking_code}`,
+        message: messageText,
+      })
+    }
     setNote('')
     load()
   }

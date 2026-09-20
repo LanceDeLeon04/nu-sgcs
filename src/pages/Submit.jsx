@@ -12,6 +12,7 @@ import {
 } from '../lib/constants.js'
 import { FeedbackNoticeText, Highlight } from '../components/NoticeText.jsx'
 import { hasProfanityIn } from '../lib/profanity.js'
+import { notifyByEmail } from '../lib/email.js'
 
 const MAX_FILES = 3
 const MAX_BYTES = 5 * 1024 * 1024
@@ -167,6 +168,15 @@ function SubmitForm({ type }) {
       }
       if (rpcErr) throw new Error(rpcErr.message)
       setResult(data)
+      if (isComplaint && f.email) {
+        notifyByEmail({
+          type: 'confirmation',
+          to: f.email,
+          name: f.complainant_name,
+          trackingCode: data,
+          trackUrl: `${window.location.origin}/track/${data}`,
+        })
+      }
       window.scrollTo({ top: 0, behavior: 'smooth' })
     } catch (err) {
       setError(err.message || 'Something went wrong. Please try again.')

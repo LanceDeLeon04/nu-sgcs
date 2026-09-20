@@ -69,6 +69,13 @@ before this version are left untouched).
    (`seed_staff_from_scs.sql` is only for reusing an existing SCS project's admins; skip it on a new project.)
 5. **Run** — `npm install && npm run dev` → http://localhost:5174, staff sign in at `/staff/login`.
 6. **Deploy** — `npm run build`, deploy `dist/` (Vercel config included).
+   - **Email notifications** (confirmation on submit, status updates, and staff replies) are sent
+     server-side by `api/send-email.js` (a Vercel serverless function) via Brevo's free transactional
+     email API — 300 emails/day, no domain verification needed. Sign up at brevo.com, grab an API key
+     under *SMTP & API*, and verify a sender email under *Senders*. Add `BREVO_API_KEY`,
+     `BREVO_SENDER_EMAIL`, and `BREVO_SENDER_NAME` to Vercel's Environment Variables (see
+     `.env.example`) and redeploy. Feedback (which can be anonymous) never gets emailed — only
+     formal complaints, since they require an NU email address.
 7. Add more staff under **Manage Staff → Create account**: type a username (or email), name, role and a password (or click Generate).
    The login is created for you — no dashboard or scripts needed. Admins can also reset a staff member's password there.
 
