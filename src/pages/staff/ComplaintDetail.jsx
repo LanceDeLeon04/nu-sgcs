@@ -81,6 +81,7 @@ export default function ComplaintDetail() {
         name: c.complainant_name,
         trackingCode: c.tracking_code,
         trackUrl: `${window.location.origin}/track/${c.tracking_code}`,
+        statusKey: status,
         statusLabel: STATUSES[status]?.label || status,
         summary: summary.trim() || c.resolution_summary || null,
       })
