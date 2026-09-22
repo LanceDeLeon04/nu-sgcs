@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { ArrowLeft, Paperclip, Download, EyeOff, Lock, Globe, Send, Loader2, Trash2, Copy, Check, Save, Star, Users, Forward, AlertTriangle } from 'lucide-react'
+import { ArrowLeft, Paperclip, Download, EyeOff, Lock, Globe, Send, Loader2, Trash2, Copy, Check, Save, Star, Users, Forward, AlertTriangle, Mail } from 'lucide-react'
 import Navbar from '../../components/Navbar.jsx'
 import { StatusBadge, PriorityBadge, TypeBadge } from '../../components/StatusBadge.jsx'
 import { supabase, EVIDENCE_BUCKET } from '../../supabaseClient'
@@ -49,6 +49,7 @@ export default function ComplaintDetail() {
   const [reassignOpen, setReassignOpen] = useState(false)
   const [reassignSel, setReassignSel] = useState({ concern_id: '', office_unsure: false })
   const [reassignBusy, setReassignBusy] = useState(false)
+  const [unit, setUnit] = useState(undefined) // undefined = not loaded yet, null = complaint has no unit_id
 
   const load = useCallback(async () => {
     const [{ data: comp }, { data: ups }, { data: att }, { data: st }] = await Promise.all([
@@ -60,6 +61,12 @@ export default function ComplaintDetail() {
     if (!comp) { setNotFound(true); return }
     setC(comp); setForwardTo((v) => (v === null ? comp.forwarded_to || '' : v)); setSummary((s) => (s === '' ? comp.resolution_summary || '' : s))
     setUpdates(ups || []); setFiles(att || []); setStaffAll(st || [])
+    if (comp.unit_id) {
+      const { data: u } = await supabase.from('gc_units').select('id, name, email, head_email').eq('id', comp.unit_id).maybeSingle()
+      setUnit(u || null)
+    } else {
+      setUnit(null)
+    }
   }, [id])
 
   useEffect(() => { load() }, [load])
@@ -197,6 +204,19 @@ export default function ComplaintDetail() {
                     <p className="mt-1 inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 bg-amber-100 border border-amber-300 rounded-full px-2 py-0.5">
                       <AlertTriangle size={11} /> Strong language detected in this submission
                     </p>
+                  )}
+                  {unit !== undefined && !isUnrouted(c) && c.department_id && (
+                    unit && (unit.email || unit.head_email) ? (
+                      <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-600">
+                        {unit.email && <span className="inline-flex items-center gap-1"><Mail size={12} className="text-nublue-500" /> {unit.email}</span>}
+                        {unit.head_email && <span className="inline-flex items-center gap-1 text-slate-400">(head: {unit.head_email})</span>}
+                      </p>
+                    ) : (
+                      <p className="mt-2 inline-flex items-start gap-1.5 text-xs font-semibold text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 max-w-md">
+                        <AlertTriangle size={13} className="shrink-0 mt-0.5" />
+                        {unit ? `${unit.name} has` : 'This office has'} no email on file yet — please follow up and forward this concern manually.
+                      </p>
+                    )
                   )}
                   <h2 className="text-lg font-bold text-slate-800 mt-0.5 break-words">{c.subject}</h2>
                   <p className="text-xs text-slate-600 mt-1">

@@ -1,10 +1,50 @@
 import React, { useCallback, useEffect, useState } from 'react'
-import { Plus, Trash2, Pencil, Check, X, ChevronDown, ChevronRight, Building2, Layers, ListChecks, EyeOff, Eye } from 'lucide-react'
+import { Plus, Trash2, Pencil, Check, X, ChevronDown, ChevronRight, Building2, Layers, ListChecks, EyeOff, Eye, Mail, AlertTriangle } from 'lucide-react'
 import Navbar from '../../components/Navbar.jsx'
 import { supabase } from '../../supabaseClient'
 
 const inp = 'border border-slate-200 rounded-lg px-2.5 py-1.5 text-sm outline-none focus:ring-2 focus:ring-nublue-500 bg-white'
 const btn = 'inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg transition'
+
+const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
+
+function UnitEmails({ unit, onSave, busy }) {
+  const [email, setEmail] = useState(unit.email || '')
+  const [headEmail, setHeadEmail] = useState(unit.head_email || '')
+  useEffect(() => { setEmail(unit.email || ''); setHeadEmail(unit.head_email || '') }, [unit.email, unit.head_email])
+
+  const dirty = (email.trim() || '') !== (unit.email || '') || (headEmail.trim() || '') !== (unit.head_email || '')
+  const emailErr = email.trim() && !EMAIL_RE.test(email.trim())
+  const headErr = headEmail.trim() && !EMAIL_RE.test(headEmail.trim())
+  const bothMissing = !unit.email && !unit.head_email
+
+  return (
+    <div className="pl-4 pb-2.5 pt-1 border-t border-slate-100 mt-1.5">
+      <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 flex items-center gap-1.5"><Mail size={11} /> Unit email &amp; head email</p>
+      {bothMissing && (
+        <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 mb-2 flex items-start gap-1.5">
+          <AlertTriangle size={12} className="shrink-0 mt-0.5" /> No email on file yet — staff handling a ticket for this unit will be told to follow up manually.
+        </p>
+      )}
+      <div className="grid sm:grid-cols-2 gap-2">
+        <div>
+          <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="office email, e.g. itso@nu-laguna.edu.ph" className={`${inp} w-full ${emailErr ? 'border-red-300' : ''}`} />
+          {emailErr && <p className="text-[10px] text-red-500 mt-0.5">Not a valid email.</p>}
+        </div>
+        <div>
+          <input value={headEmail} onChange={(e) => setHeadEmail(e.target.value)} type="email" placeholder="unit head email (optional)" className={`${inp} w-full ${headErr ? 'border-red-300' : ''}`} />
+          {headErr && <p className="text-[10px] text-red-500 mt-0.5">Not a valid email.</p>}
+        </div>
+      </div>
+      {dirty && !emailErr && !headErr && (
+        <button onClick={() => onSave({ email: email.trim() || null, head_email: headEmail.trim() || null })} disabled={busy}
+          className={`${btn} mt-2 bg-nugold-500 hover:bg-nugold-400 text-nublue-900 disabled:opacity-50`}>
+          <Check size={13} /> Save emails
+        </button>
+      )}
+    </div>
+  )
+}
 
 function AddRow({ placeholder, onAdd, busy }) {
   const [v, setV] = useState('')
@@ -94,6 +134,7 @@ export default function Offices() {
 
   const renameDept = (id, name) => guard(async () => { const { error } = await supabase.from('gc_departments').update({ name }).eq('id', id); if (error) throw error; load() })
   const renameUnit = (id, name) => guard(async () => { const { error } = await supabase.from('gc_units').update({ name }).eq('id', id); if (error) throw error; load() })
+  const saveUnitEmails = (id, patch) => guard(async () => { const { error } = await supabase.from('gc_units').update(patch).eq('id', id); if (error) throw error; load() })
   const renameConcern = (id, name) => guard(async () => { const { error } = await supabase.from('gc_concerns').update({ name }).eq('id', id); if (error) throw error; load() })
 
   const toggleDept = (row) => guard(async () => { const { error } = await supabase.from('gc_departments').update({ is_active: !row.is_active }).eq('id', row.id); if (error) throw error; load() })
@@ -155,11 +196,17 @@ export default function Offices() {
                             <Layers size={13} className="text-nugold-600 shrink-0" />
                             <EditableName name={u.name} isActive={u.is_active} busy={busy}
                               onSave={(v) => renameUnit(u.id, v)} onDelete={() => delUnit(u)} onToggleActive={() => toggleUnit(u)} />
+                            {!u.email && !u.head_email && (
+                              <span title="No email on file" className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-1.5 py-0.5 shrink-0">
+                                <AlertTriangle size={10} /> No email
+                              </span>
+                            )}
                             <span className="text-[11px] text-slate-400 shrink-0">{unitConcerns.length}</span>
                           </div>
 
                           {uOpen && (
                             <div className="border-t border-slate-100 px-3 py-2.5 space-y-1.5">
+                              <UnitEmails unit={u} busy={busy} onSave={(patch) => saveUnitEmails(u.id, patch)} />
                               {unitConcerns.map((c) => (
                                 <div key={c.id} className="flex items-center gap-2 pl-4">
                                   <ListChecks size={12} className="text-slate-400 shrink-0" />

@@ -166,6 +166,18 @@ they still don't find a match, the submission is saved as **Not yet routed** for
   *Route this to an office* for an unrouted one). Pick the correct Department › Unit › Concern and
   save; the student is notified by email (and sees it on their tracking page, for complaints).
 
+## Unit emails
+
+Each unit can have an **office email** and a **unit head email** (both optional), set by admins
+in **Offices & Concerns**. When staff open a ticket, if the routed unit has neither email on file
+they see a clear warning ("no email on file — follow up and forward this concern manually") so
+nothing silently falls through the cracks; if at least one is set, both are shown right on the
+ticket for easy copy-paste.
+
+- **Run once** (after the migrations above): SQL Editor → paste `migration_unit_emails.sql` → Run.
+- **Set them** — staff app → **Offices & Concerns** → expand a unit → fill in the office email
+  and/or unit head email → Save.
+
 ## Customizing
 
 - Categories: `src/lib/constants.js` **and** the `v_categories` array in `gc_submit_complaint()` / `gc_submit_feedback()` (keep in sync).
