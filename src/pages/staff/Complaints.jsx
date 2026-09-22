@@ -92,7 +92,7 @@ export default function Complaints() {
           <select className={sel} value={department} onChange={(e) => setParam('department', e.target.value)}>
             <option value="all">All departments</option>
             <option value="unrouted">Not yet routed</option>
-            {[...new Set(rows.map((r) => r.office_department || r.category).filter(Boolean))].sort().map((d) => <option key={d}>{d}</option>)}
+            {[...new Set((rows || []).map((r) => r.office_department || r.category).filter(Boolean))].sort().map((d) => <option key={d}>{d}</option>)}
           </select>
           {type !== 'feedback' && (
             <select className={sel} value={priority} onChange={(e) => setParam('priority', e.target.value)}>
