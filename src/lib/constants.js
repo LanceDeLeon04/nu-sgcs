@@ -1,48 +1,23 @@
 export const APP_NAME = 'Council of Leaders'
 export const APP_SUBTITLE = 'Student Grievance and Complaints System'
 
-// Complaint categories: 4 primary groups, each with sub-categories.
-// Must match gc_submit_complaint() in migration_categories_validation.sql
-export const CATEGORY_GROUPS = [
-  {
-    name: 'Academic Concerns',
-    description: 'Issues related to coursework, exams, grading, or any academic-related matters.',
-    subs: ['Academic Concern', 'Instructor / Faculty Conduct'],
-  },
-  {
-    name: 'Student Welfare',
-    description: "Matters regarding students' well-being, safety, and support services.",
-    subs: ['Harassment or Bullying', 'Discrimination', 'Safety & Security'],
-  },
-  {
-    name: 'Administrative Issues',
-    description: "Concerns related to the institution's management, policies, or processes.",
-    subs: ['Facilities & Services', 'Fees & Financial Concern', 'Office / Administrative Service'],
-  },
-  {
-    name: 'Others',
-    description: 'Issues outside academic/admin concerns.',
-    subs: ['Student Council / Officer Conduct', 'Student Organization Concern', 'Other'],
-  },
-]
-export const CATEGORIES = CATEGORY_GROUPS.map((g) => g.name)
-export const subcategoriesOf = (primary) => CATEGORY_GROUPS.find((g) => g.name === primary)?.subs || []
-export const groupOf = (primary) => CATEGORY_GROUPS.find((g) => g.name === primary) || null
-// "Student Welfare › Discrimination" (feedback rows have no sub-category)
-export const categoryLabel = (c) => (c?.subcategory ? `${c.category} › ${c.subcategory}` : c?.category || '')
+// Routing: Department > Unit > Concern lives in the database (gc_departments / gc_units / gc_concerns)
+// and is managed by admins in the staff app (Offices & Concerns). Nothing to edit here.
+export const NOT_SURE = 'unsure' // the value of the "I'm not sure" option in the Department dropdown
 
-// Categories for FEEDBACK (must match gc_submit_feedback() in schema.sql)
-export const FEEDBACK_CATEGORIES = [
-  'Suggestion',
-  'Compliment / Commendation',
-  'Concern / Observation',
-  'Academic',
-  'Student Council / Organization',
-  'Facilities & Services',
-  'Office / Administrative Service',
-  'Events & Activities',
-  'Other',
-]
+// "Department › Unit › Concern" for a complaint/feedback row. Older rows (filed before office routing)
+// fall back to their old "Category › Sub-category".
+export const officeLabel = (c) => {
+  if (c?.office_department) return [c.office_department, c.office_unit, c.office_concern].filter(Boolean).join(' › ')
+  if (c?.office_unsure) return 'Not yet routed'
+  return c?.subcategory ? `${c.category} › ${c.subcategory}` : c?.category || ''
+}
+export const categoryLabel = officeLabel
+export const isUnrouted = (c) => !!c && !c.office_department && !!c.office_unsure
+
+// Type of FEEDBACK (what kind of message it is). Where it goes is chosen with Department > Unit > Concern.
+// Must match gc_submit_feedback() in migration_office_routing.sql
+export const FEEDBACK_TYPES = ['Suggestion', 'Compliment / Commendation', 'Concern / Observation', 'Other']
 
 export const TYPES = {
   complaint: { label: 'Complaint', cls: 'bg-nublue-600 text-white border-nublue-600' },
@@ -57,7 +32,7 @@ export const COMPLAINT_NOTICE =
 
 export const YEAR_LEVELS = ['1st Year', '2nd Year', '3rd Year', '4th Year', '5th Year', 'Graduate']
 
-/* Department -> Program/Strand list, shown as two linked dropdowns on the submission form. */
+/* The STUDENT's own school -> Program/Strand list ("Your details" section). Not the office the concern is about. */
 export const DEPARTMENTS = [
   {
     name: 'Senior High School (SHS)',

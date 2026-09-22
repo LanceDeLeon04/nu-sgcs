@@ -148,6 +148,24 @@ you ever want that layered on top later, an optional AI-summarization step could
 these same search results, but this setup works fully on its own with zero ongoing cost or dependency
 on any outside service.
 
+## Office routing (Department › Unit › Concern)
+
+The submission form routes each complaint/feedback to a **Department › Unit › Concern**, e.g.
+`Administration/Executive › IT Services Office › Email concerns`. Students can also pick
+**"I'm not sure"**, which shows a live search box over every concern in every department; if
+they still don't find a match, the submission is saved as **Not yet routed** for an admin to sort.
+
+- **Run once** (after `schema.sql` and `migration_categories_validation.sql`):
+  SQL Editor → paste `migration_office_routing.sql` → Run. It creates the directory tables
+  (`gc_departments`, `gc_units`, `gc_concerns`), seeds them with a starter directory (only if the
+  directory is empty), and updates `gc_submit_complaint` / `gc_submit_feedback` / `gc_track_complaint`.
+- **Manage it** — staff app → **Offices & Concerns** (admins only): add, rename, hide, or delete
+  departments/units/concerns. Renaming updates every existing submission that used that item
+  automatically; hiding removes it from the student form without touching past submissions.
+- **Fix a wrong office** — open any submission → Admin panel → *Wrong office? Change it* (or
+  *Route this to an office* for an unrouted one). Pick the correct Department › Unit › Concern and
+  save; the student is notified by email (and sees it on their tracking page, for complaints).
+
 ## Customizing
 
 - Categories: `src/lib/constants.js` **and** the `v_categories` array in `gc_submit_complaint()` / `gc_submit_feedback()` (keep in sync).

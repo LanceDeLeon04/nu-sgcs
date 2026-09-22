@@ -32,7 +32,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     supabase.from('gc_complaints')
-      .select('id, type, reference_no, subject, category, status, priority, assigned_to, submitted_at, satisfaction_rating')
+      .select('id, type, reference_no, subject, category, office_department, office_unsure, status, priority, assigned_to, submitted_at, satisfaction_rating')
       .order('submitted_at', { ascending: false })
       .limit(2000)
       .then(({ data }) => setRows(data || []))
@@ -45,6 +45,7 @@ export default function Dashboard() {
   const count = (keys) => complaints.filter((r) => keys.includes(r.status)).length
   const rated = complaints.filter((r) => r.satisfaction_rating)
   const avg = rated.length ? (rated.reduce((a, r) => a + r.satisfaction_rating, 0) / rated.length).toFixed(1) : null
+  const unroutedCount = rows.filter((r) => !r.office_department && r.office_unsure).length
 
   const cards = [
     { label: 'New', sub: 'awaiting review', value: count(['received']), icon: Inbox, color: 'from-nublue-600 to-nublue-500', to: '/staff/complaints?type=complaint&status=received' },
@@ -52,10 +53,12 @@ export default function Dashboard() {
     { label: 'Overdue', sub: 'open for over a week', value: complaints.filter(isOverdue).length, icon: AlertTriangle, color: 'from-red-600 to-red-500', to: '/staff/complaints?type=complaint&status=overdue' },
     { label: 'Resolved', sub: 'resolved or closed', value: count(['resolved', 'closed']), icon: CheckCircle2, color: 'from-nugold-500 to-nugold-400', to: '/staff/complaints?type=complaint&status=done' },
     { label: 'Feedback', sub: 'to forward', value: feedback.filter((r) => r.status === 'received').length, icon: MessageSquareText, color: 'from-teal-700 to-teal-500', to: '/staff/complaints?type=feedback' },
+    { label: 'Not routed', sub: 'student wasn\'t sure which office', value: unroutedCount, icon: AlertTriangle, color: 'from-orange-600 to-orange-500', to: '/staff/complaints?department=unrouted' },
   ]
 
   const byStatus = STATUS_KEYS.map((k) => ({ label: STATUSES[k].label, value: rows.filter((r) => r.status === k).length })).filter((r) => r.value > 0)
-  const byCat = [...new Set(rows.map((r) => r.category))].map((c) => ({ label: c, value: rows.filter((r) => r.category === c).length })).sort((a, b) => b.value - a.value)
+  const deptOf = (r) => r.office_department || (r.office_unsure ? 'Not yet routed' : r.category)
+  const byCat = [...new Set(rows.map(deptOf))].map((c) => ({ label: c, value: rows.filter((r) => deptOf(r) === c).length })).sort((a, b) => b.value - a.value)
 
   const attention = rows
     .filter((r) => r.type !== 'feedback' && OPEN_STATUSES.includes(r.status) && (r.status === 'received' || r.priority === 'urgent' || isOverdue(r)))
@@ -65,7 +68,7 @@ export default function Dashboard() {
     <div>
       <Navbar title={`Welcome, ${staff?.full_name?.split(' ')[0] || 'Officer'}`} />
       <div className="p-8">
-        <div className="grid sm:grid-cols-2 xl:grid-cols-5 gap-5 mb-8">
+        <div className="grid sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6 gap-5 mb-8">
           {cards.map((c) => (
             <Link key={c.label} to={c.to}
               className="group relative overflow-hidden rounded-2xl p-6 text-white card-glow hover:-translate-y-0.5 hover:shadow-xl transition-all">
@@ -94,7 +97,7 @@ export default function Dashboard() {
                     <Link to={`/staff/complaints/${r.id}`} className="flex items-center justify-between gap-3 py-3 hover:bg-slate-50 -mx-2 px-2 rounded-lg transition">
                       <div className="min-w-0">
                         <p className="text-sm font-semibold text-slate-700 truncate">{r.subject}</p>
-                        <p className="text-[11px] text-slate-400">{r.reference_no} · {r.category} · {fmtDate(r.submitted_at)}
+                        <p className="text-[11px] text-slate-400">{r.reference_no} · {deptOf(r)} · {fmtDate(r.submitted_at)}
                           {isOverdue(r) && <span className="text-red-500 font-semibold"> · {daysOpen(r)} days open</span>}
                           {r.priority === 'urgent' && <span className="text-red-500 font-semibold"> · Urgent</span>}
                         </p>
@@ -120,7 +123,7 @@ export default function Dashboard() {
         </div>
 
         <div className="bg-white rounded-2xl border border-slate-100 card-glow p-6">
-          <h2 className="font-bold text-slate-800 mb-4">By category <span className="text-xs font-normal text-slate-400">(complaints + feedback)</span></h2>
+          <h2 className="font-bold text-slate-800 mb-4">By department <span className="text-xs font-normal text-slate-400">(complaints + feedback)</span></h2>
           {byCat.length ? <Bars rows={byCat} total={rows.length} color="bg-nugold-500" /> : <p className="text-sm text-slate-400">No complaints yet.</p>}
         </div>
       </div>

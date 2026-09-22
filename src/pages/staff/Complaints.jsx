@@ -5,7 +5,7 @@ import Navbar from '../../components/Navbar.jsx'
 import { StatusBadge, PriorityBadge, TypeBadge } from '../../components/StatusBadge.jsx'
 import { supabase } from '../../supabaseClient'
 import { useAuth } from '../../lib/auth.jsx'
-import { STATUSES, STATUS_KEYS, COMPLAINT_STATUS_KEYS, FEEDBACK_STATUS_KEYS, CATEGORIES, FEEDBACK_CATEGORIES, PRIORITIES, OPEN_STATUSES, categoryLabel, fmtDate, isOverdue, daysOpen } from '../../lib/constants.js'
+import { STATUSES, STATUS_KEYS, COMPLAINT_STATUS_KEYS, FEEDBACK_STATUS_KEYS, PRIORITIES, OPEN_STATUSES, officeLabel, isUnrouted, fmtDate, isOverdue, daysOpen } from '../../lib/constants.js'
 
 const sel = 'border border-slate-200 rounded-xl px-3 py-2 text-sm bg-white outline-none focus:ring-2 focus:ring-nublue-500'
 
@@ -18,7 +18,7 @@ export default function Complaints() {
 
   const type = params.get('type') || 'all'         // all | complaint | feedback
   const status = params.get('status') || 'all'   // status key | all | open | overdue | done
-  const category = params.get('category') || 'all'
+  const department = params.get('department') || 'all'
   const priority = params.get('priority') || 'all'
   const assignee = params.get('assignee') || 'all' // all | me | none | <staff user_id>
 
@@ -32,7 +32,7 @@ export default function Complaints() {
     (async () => {
       const [{ data: c }, { data: s }] = await Promise.all([
         supabase.from('gc_complaints')
-          .select('id, type, reference_no, subject, category, subcategory, flagged_language, status, priority, assigned_to, forwarded_to, is_anonymous, complainant_name, respondent, submitted_at, gc_attachments(id)')
+          .select('id, type, reference_no, subject, category, subcategory, office_department, office_unit, office_concern, office_unsure, flagged_language, status, priority, assigned_to, forwarded_to, is_anonymous, complainant_name, respondent, submitted_at, gc_attachments(id)')
           .order('submitted_at', { ascending: false }).limit(2000),
         supabase.from('gc_staff').select('user_id, full_name'),
       ])
@@ -50,7 +50,8 @@ export default function Complaints() {
       if (status === 'done' && !['resolved', 'closed'].includes(r.status)) return false
       if (status === 'overdue' && !isOverdue(r)) return false
       if (STATUS_KEYS.includes(status) && r.status !== status) return false
-      if (category !== 'all' && r.category !== category) return false
+      if (department !== 'all' && department !== 'unrouted' && (r.office_department || r.category) !== department) return false
+      if (department === 'unrouted' && !isUnrouted(r)) return false
       if (priority !== 'all' && r.priority !== priority) return false
       if (assignee === 'me' && r.assigned_to !== session.user.id) return false
       if (assignee === 'none' && r.assigned_to) return false
@@ -69,7 +70,7 @@ export default function Complaints() {
       <div className="p-8">
         <div className="flex gap-2 mb-4">
           {[['all', 'All'], ['complaint', 'Complaints'], ['feedback', 'Feedback']].map(([k, l]) => (
-            <button key={k} onClick={() => { const n = new URLSearchParams(params); if (k === 'all') n.delete('type'); else n.set('type', k); n.delete('status'); n.delete('category'); setParams(n, { replace: true }) }}
+            <button key={k} onClick={() => { const n = new URLSearchParams(params); if (k === 'all') n.delete('type'); else n.set('type', k); n.delete('status'); n.delete('department'); setParams(n, { replace: true }) }}
               className={`text-sm font-semibold px-4 py-1.5 rounded-full border transition ${type === k ? 'bg-nublue-600 text-white border-nublue-600 shadow-glow' : 'bg-white text-slate-500 border-slate-200 hover:bg-nublue-50'}`}>
               {l}{rows ? <span className="ml-1.5 text-[11px] opacity-70">{k === 'all' ? rows.length : rows.filter((r) => r.type === k).length}</span> : null}
             </button>
@@ -88,9 +89,10 @@ export default function Complaints() {
             {type !== 'feedback' && <option value="done">Resolved / closed</option>}
             {(type === 'feedback' ? FEEDBACK_STATUS_KEYS : type === 'complaint' ? COMPLAINT_STATUS_KEYS : STATUS_KEYS).map((k) => <option key={k} value={k}>{STATUSES[k].label}</option>)}
           </select>
-          <select className={sel} value={category} onChange={(e) => setParam('category', e.target.value)}>
-            <option value="all">All categories</option>
-            {(type === 'feedback' ? FEEDBACK_CATEGORIES : type === 'complaint' ? CATEGORIES : [...new Set([...CATEGORIES, ...FEEDBACK_CATEGORIES])]).map((c) => <option key={c}>{c}</option>)}
+          <select className={sel} value={department} onChange={(e) => setParam('department', e.target.value)}>
+            <option value="all">All departments</option>
+            <option value="unrouted">Not yet routed</option>
+            {[...new Set(rows.map((r) => r.office_department || r.category).filter(Boolean))].sort().map((d) => <option key={d}>{d}</option>)}
           </select>
           {type !== 'feedback' && (
             <select className={sel} value={priority} onChange={(e) => setParam('priority', e.target.value)}>
@@ -127,9 +129,14 @@ export default function Complaints() {
                           <AlertTriangle size={10} /> Language
                         </span>
                       )}
+                      {isUnrouted(r) && (
+                        <span title="Student wasn't sure which office" className="inline-flex items-center gap-1 text-[10px] font-bold text-orange-800 bg-orange-100 border border-orange-300 rounded-full px-1.5 py-0.5">
+                          Not yet routed
+                        </span>
+                      )}
                     </div>
                     <p className="text-xs text-slate-400 mt-1">
-                      <span className="font-mono">{r.reference_no}</span> · {categoryLabel(r)} · {fmtDate(r.submitted_at)}
+                      <span className="font-mono">{r.reference_no}</span> · {officeLabel(r)} · {fmtDate(r.submitted_at)}
                     </p>
                     <p className="text-[11px] text-slate-400 mt-1 flex items-center gap-3 flex-wrap">
                       <span className="flex items-center gap-1">

@@ -7,10 +7,11 @@ import {
 import PublicShell from '../components/PublicShell.jsx'
 import { supabase, EVIDENCE_BUCKET } from '../supabaseClient'
 import {
-  CATEGORIES, FEEDBACK_CATEGORIES, YEAR_LEVELS, COMPLAINT_NOTICE, subcategoriesOf, groupOf,
+  YEAR_LEVELS, COMPLAINT_NOTICE, FEEDBACK_TYPES,
   formatStudentId, isValidStudentId, isValidNuEmail, STUDENT_ID_HINT, NU_EMAIL_DOMAIN, NU_EMAIL_HINT,
   DEPARTMENT_NAMES, programsOf,
 } from '../lib/constants.js'
+import OfficePicker from '../components/OfficePicker.jsx'
 import { FeedbackNoticeText, Highlight } from '../components/NoticeText.jsx'
 import { hasProfanityIn } from '../lib/profanity.js'
 import { notifyByEmail } from '../lib/email.js'
@@ -80,7 +81,8 @@ export function TypeChooser() {
 /* ------------------------------------------------------------------ */
 const blank = {
   is_anonymous: false, complainant_name: '', student_id: '', email: '', contact_no: '', department: '', program: '', year_level: '',
-  category: '', subcategory: '', subject: '', description: '', incident_date: '', incident_location: '', respondent: '', desired_outcome: '',
+  concern_id: '', office_unsure: false, feedback_type: '',
+  subject: '', description: '', incident_date: '', incident_location: '', respondent: '', desired_outcome: '',
   website: '', // honeypot
 }
 
@@ -113,15 +115,12 @@ function SubmitForm({ type }) {
   }, [f, type])
 
   const set = (k) => (e) => setF((p) => ({ ...p, [k]: e.target.value }))
-  const setCategory = (e) => setF((p) => ({ ...p, category: e.target.value, subcategory: '' }))
-  const setDepartment = (e) => setF((p) => ({ ...p, department: e.target.value, program: '' }))
+  const setSchoolDept = (e) => setF((p) => ({ ...p, department: e.target.value, program: '' }))
   const setStudentId = (e) => setF((p) => ({ ...p, student_id: formatStudentId(e.target.value) }))
+  const setOffice = (next) => setF((p) => ({ ...p, ...next }))
   const today = new Date().toISOString().slice(0, 10)
   const anon = !isComplaint && f.is_anonymous
-  const cats = isComplaint ? CATEGORIES : FEEDBACK_CATEGORIES
   const minDesc = isComplaint ? 20 : 10
-  const subs = isComplaint ? subcategoriesOf(f.category) : []
-  const group = isComplaint ? groupOf(f.category) : null
   const programs = programsOf(f.department)
   // Feedback: strong language is blocked. Complaints: allowed (people may need to quote what was said) but flagged for staff.
   const strongLanguage = useMemo(
@@ -147,8 +146,8 @@ function SubmitForm({ type }) {
     e.preventDefault()
     setError('')
     if (f.website) return // bot
-    if (!f.category) return setError('Please choose a category.')
-    if (isComplaint && !f.subcategory) return setError('Please choose a sub-category.')
+    if (!isComplaint && !f.feedback_type) return setError('Please choose the type of feedback.')
+    if (!f.concern_id && !f.office_unsure) return setError('Please choose a department, unit and concern (or select "I\'m not sure").')
     if (f.subject.trim().length < 5) return setError('Please enter a subject (at least 5 characters).')
     if (f.description.trim().length < minDesc) return setError(`Please write at least ${minDesc} characters in the description.`)
     if (!anon && !f.complainant_name.trim()) return setError(isComplaint ? 'Please enter your full name.' : 'Please enter your name, or send the feedback anonymously.')
@@ -178,12 +177,14 @@ function SubmitForm({ type }) {
         const payload = { ...f, is_anonymous: false, submission_id: sid, attachments }
         delete payload.website
         if (payload.incident_date === '') delete payload.incident_date
+        if (payload.concern_id === '') delete payload.concern_id
         ;({ data, error: rpcErr } = await supabase.rpc('gc_submit_complaint', { p: payload }))
       } else {
         const payload = {
           is_anonymous: f.is_anonymous, complainant_name: f.complainant_name, email: f.email, student_id: f.student_id,
-          program: f.program, year_level: f.year_level, category: f.category, subject: f.subject,
-          description: f.description, respondent: f.respondent,
+          program: f.program, year_level: f.year_level,
+          concern_id: f.concern_id || undefined, office_unsure: f.office_unsure, feedback_type: f.feedback_type,
+          subject: f.subject, description: f.description, respondent: f.respondent,
         }
         ;({ data, error: rpcErr } = await supabase.rpc('gc_submit_feedback', { p: payload }))
       }
@@ -324,9 +325,9 @@ function SubmitForm({ type }) {
                 <div><label className={label}>Contact number</label>
                   <input className={`${input} mt-1`} value={f.contact_no} onChange={set('contact_no')} maxLength={50} /></div>
               )}
-              <div><label className={label}>Department</label>
-                <select className={`${input} mt-1`} value={f.department} onChange={setDepartment}>
-                  <option value="">Select a department…</option>
+              <div><label className={label}>Your school / department</label>
+                <select className={`${input} mt-1`} value={f.department} onChange={setSchoolDept}>
+                  <option value="">Select…</option>
                   {DEPARTMENT_NAMES.map((d) => <option key={d}>{d}</option>)}
                 </select></div>
               <div><label className={label}>Program {f.department === 'Senior High School (SHS)' ? '/ Strand' : '/ Course'}</label>
@@ -349,25 +350,28 @@ function SubmitForm({ type }) {
         {/* Content */}
         <section className="bg-white rounded-2xl border border-slate-100 card-glow p-5 sm:p-6 space-y-4">
           <h2 className="font-bold text-slate-800">2. {isComplaint ? 'What is your concern?' : 'What would you like to tell us?'}</h2>
-          <div className="grid sm:grid-cols-2 gap-4">
-            <div><label className={label}>Category <span className="text-red-500">*</span></label>
-              <select className={`${input} mt-1`} value={f.category} onChange={isComplaint ? setCategory : set('category')}>
-                <option value="">Select a category…</option>
-                {cats.map((c) => <option key={c}>{c}</option>)}
-              </select>
-              {group && <p className="text-[11px] text-slate-500 mt-1 leading-snug">{group.description}</p>}</div>
-            {isComplaint && (
-              <div><label className={label}>Sub-category <span className="text-red-500">*</span></label>
-                <select className={`${input} mt-1 disabled:bg-slate-50 disabled:text-slate-400`} value={f.subcategory} onChange={set('subcategory')} disabled={!f.category}>
-                  <option value="">{f.category ? 'Select a sub-category…' : 'Choose a category first'}</option>
-                  {subs.map((c) => <option key={c}>{c}</option>)}
-                </select></div>
-            )}
-            {isComplaint && (
+
+          {!isComplaint && (
+            <div><label className={label}>Type of feedback <span className="text-red-500">*</span></label>
+              <select className={`${input} mt-1`} value={f.feedback_type} onChange={set('feedback_type')}>
+                <option value="">Select…</option>
+                {FEEDBACK_TYPES.map((t) => <option key={t}>{t}</option>)}
+              </select></div>
+          )}
+
+          <div>
+            <label className={label}>Department, unit &amp; concern <span className="text-red-500">*</span></label>
+            <div className="mt-1">
+              <OfficePicker value={{ concern_id: f.concern_id, office_unsure: f.office_unsure }} onChange={setOffice} />
+            </div>
+          </div>
+
+          {isComplaint && (
+            <div className="grid sm:grid-cols-2 gap-4">
               <div><label className={label}>Date of incident</label>
                 <input type="date" max={today} className={`${input} mt-1`} value={f.incident_date} onChange={set('incident_date')} /></div>
-            )}
-          </div>
+            </div>
+          )}
           <div><label className={label}>Subject <span className="text-red-500">*</span></label>
             <input className={`${input} mt-1`} value={f.subject} onChange={set('subject')} maxLength={200} placeholder="A short title" /></div>
           <div><label className={label}>{isComplaint ? 'Description' : 'Your feedback'} <span className="text-red-500">*</span></label>

@@ -1,7 +1,7 @@
 import React from 'react'
 import { NavLink, Link } from 'react-router-dom'
 import { useAuth } from '../lib/auth.jsx'
-import { LayoutGrid, Inbox, Users, Settings as SettingsIcon, LogOut, ShieldCheck, Globe } from 'lucide-react'
+import { LayoutGrid, Inbox, Users, Settings as SettingsIcon, LogOut, ShieldCheck, Globe, Building2 } from 'lucide-react'
 import Brand from './Brand.jsx'
 
 const linkBase = 'flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors'
@@ -24,6 +24,7 @@ export default function StaffSidebar() {
         <NavLink to="/staff" end className={cls}><LayoutGrid size={18} /> Dashboard</NavLink>
         <NavLink to="/staff/complaints" className={cls}><Inbox size={18} /> Complaints &amp; Feedback</NavLink>
         {isAdmin && <NavLink to="/staff/team" className={cls}><Users size={18} /> Manage Staff</NavLink>}
+        {isAdmin && <NavLink to="/staff/offices" className={cls}><Building2 size={18} /> Offices &amp; Concerns</NavLink>}
         <NavLink to="/staff/settings" className={cls}><SettingsIcon size={18} /> Settings</NavLink>
         <Link to="/" className={`${linkBase} ${linkIdle}`}><Globe size={18} /> Public Site</Link>
       </nav>

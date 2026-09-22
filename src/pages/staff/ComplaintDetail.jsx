@@ -5,7 +5,8 @@ import Navbar from '../../components/Navbar.jsx'
 import { StatusBadge, PriorityBadge, TypeBadge } from '../../components/StatusBadge.jsx'
 import { supabase, EVIDENCE_BUCKET } from '../../supabaseClient'
 import { useAuth } from '../../lib/auth.jsx'
-import { STATUSES, COMPLAINT_STATUS_KEYS, FEEDBACK_STATUS_KEYS, PRIORITIES, categoryLabel, fmtDate, fmtDateTime, isOverdue, daysOpen } from '../../lib/constants.js'
+import { STATUSES, COMPLAINT_STATUS_KEYS, FEEDBACK_STATUS_KEYS, PRIORITIES, officeLabel, isUnrouted, fmtDate, fmtDateTime, isOverdue, daysOpen } from '../../lib/constants.js'
+import OfficePicker from '../../components/OfficePicker.jsx'
 import { notifyByEmail } from '../../lib/email.js'
 
 const sel = 'w-full border border-slate-300 rounded-xl px-3 py-2 text-sm text-slate-900 placeholder:text-slate-700 bg-white outline-none focus:ring-2 focus:ring-nublue-500'
@@ -44,6 +45,10 @@ export default function ComplaintDetail() {
   const [posting, setPosting] = useState(false)
   const [copied, setCopied] = useState(false)
   const [forwardTo, setForwardTo] = useState(null)
+
+  const [reassignOpen, setReassignOpen] = useState(false)
+  const [reassignSel, setReassignSel] = useState({ concern_id: '', office_unsure: false })
+  const [reassignBusy, setReassignBusy] = useState(false)
 
   const load = useCallback(async () => {
     const [{ data: comp }, { data: ups }, { data: att }, { data: st }] = await Promise.all([
@@ -131,6 +136,29 @@ export default function ComplaintDetail() {
     try { await navigator.clipboard.writeText(c.tracking_code); setCopied(true); setTimeout(() => setCopied(false), 1500) } catch { /* ignore */ }
   }
 
+  const reassign = async () => {
+    if (!reassignSel.concern_id) { setErr('Choose a department, unit and concern to move this to.'); return }
+    setReassignBusy(true); setErr('')
+    const { data, error } = await supabase.rpc('gc_reassign_complaint', { p_id: id, p_concern_id: reassignSel.concern_id })
+    setReassignBusy(false)
+    if (error) { setErr(error.message); return }
+    setReassignOpen(false)
+    setReassignSel({ concern_id: '', office_unsure: false })
+    if (c.email) {
+      notifyByEmail({
+        type: 'reassigned',
+        to: c.email,
+        name: c.complainant_name,
+        trackingCode: c.tracking_code,
+        trackUrl: c.tracking_code ? `${window.location.origin}/track/${c.tracking_code}` : undefined,
+        itemLabel: isFeedback ? 'feedback' : 'complaint',
+        newLabel: data.new_label,
+        oldLabel: data.old_label,
+      })
+    }
+    load()
+  }
+
   if (notFound) return (<div><Navbar title="Complaint" /><p className="p-8 text-sm text-slate-700">Complaint not found (or you don't have access).</p></div>)
   if (!c) return (<div><Navbar title="Complaint" /><p className="p-8 text-sm text-slate-600">Loading…</p></div>)
 
@@ -159,7 +187,12 @@ export default function ComplaintDetail() {
             <div className="bg-white rounded-2xl border border-slate-100 card-glow p-6">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className={`${lbl} flex items-center gap-2`}><TypeBadge type={c.type} /> {categoryLabel(c)}</p>
+                  <p className={`${lbl} flex items-center gap-2`}><TypeBadge type={c.type} /> {officeLabel(c)}</p>
+                  {isUnrouted(c) && (
+                    <p className="mt-1 inline-flex items-center gap-1 text-[11px] font-bold text-orange-800 bg-orange-100 border border-orange-300 rounded-full px-2 py-0.5">
+                      Not yet routed — student wasn't sure which office
+                    </p>
+                  )}
                   {c.flagged_language && (
                     <p className="mt-1 inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 bg-amber-100 border border-amber-300 rounded-full px-2 py-0.5">
                       <AlertTriangle size={11} /> Strong language detected in this submission
@@ -332,6 +365,33 @@ export default function ComplaintDetail() {
             {isAdmin && (
               <div className="bg-white rounded-2xl border border-slate-100 card-glow p-5 space-y-3">
                 <h3 className="font-bold text-slate-800">Admin</h3>
+
+                <div>
+                  <p className={`${lbl} mb-1`}>Office</p>
+                  <p className="text-sm text-slate-700">{officeLabel(c)}</p>
+                  {!reassignOpen ? (
+                    <button type="button" onClick={() => setReassignOpen(true)}
+                      className="mt-2 text-xs font-semibold text-nublue-600 hover:text-nublue-800">
+                      {isUnrouted(c) ? 'Route this to an office' : 'Wrong office? Change it'}
+                    </button>
+                  ) : (
+                    <div className="mt-2 space-y-2">
+                      <OfficePicker value={reassignSel} onChange={setReassignSel} />
+                      <p className="text-[11px] text-slate-500">The {isFeedback ? 'sender' : 'complainant'} will be notified of the change{!c.email ? ' (no email on file, so this will only show on their tracking page).' : '.'}</p>
+                      <div className="flex gap-2">
+                        <button type="button" disabled={reassignBusy || !reassignSel.concern_id} onClick={reassign}
+                          className="text-xs font-semibold bg-nugold-500 hover:bg-nugold-400 text-nublue-900 px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition disabled:opacity-50">
+                          <Save size={12} /> Save & notify
+                        </button>
+                        <button type="button" onClick={() => { setReassignOpen(false); setReassignSel({ concern_id: '', office_unsure: false }) }}
+                          className="text-xs font-semibold text-slate-500 hover:text-slate-700 px-3 py-1.5 rounded-lg transition">
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 {c.tracking_code && <div>
                   <p className={lbl}>Tracking code</p>
                   <button onClick={copyCode} className="mt-1 flex items-center gap-2 font-mono text-sm text-nublue-700 hover:text-nublue-900">

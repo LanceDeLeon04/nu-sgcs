@@ -15,6 +15,7 @@ import Dashboard from './pages/staff/Dashboard.jsx'
 import Complaints from './pages/staff/Complaints.jsx'
 import ComplaintDetail from './pages/staff/ComplaintDetail.jsx'
 import Team from './pages/staff/Team.jsx'
+import Offices from './pages/staff/Offices.jsx'
 import Settings from './pages/staff/Settings.jsx'
 
 function LoadingScreen() {
@@ -106,6 +107,7 @@ export default function App() {
       <Route path="/staff/complaints" element={<StaffLayout><Complaints /></StaffLayout>} />
       <Route path="/staff/complaints/:id" element={<StaffLayout><ComplaintDetail /></StaffLayout>} />
       <Route path="/staff/team" element={<StaffLayout adminOnly><Team /></StaffLayout>} />
+      <Route path="/staff/offices" element={<StaffLayout adminOnly><Offices /></StaffLayout>} />
       <Route path="/staff/settings" element={<StaffLayout><Settings /></StaffLayout>} />
 
       <Route path="*" element={<Navigate to="/" replace />} />

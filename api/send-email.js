@@ -157,6 +157,26 @@ function buildMessage(type, p) {
     }
   }
 
+  if (type === 'reassigned') {
+    return {
+      subject: `Your ${p.itemLabel || 'submission'} was moved to a different office${code ? ` (${code})` : ''}`,
+      html: wrap({
+        eyebrow: 'Routed to a new office', heading: 'Your submission was moved to a different office',
+        code, trackUrl,
+        bodyHtml: `
+          <p style="margin:0 0 14px;">Hi ${name},</p>
+          <p style="margin:0 0 10px;">The Council of Leaders reviewed your ${escapeHtml(p.itemLabel || 'submission')} and routed it to a different office so it reaches the right people:</p>
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:4px;">
+            <tr><td style="background:#f8fafc;border:1px solid #eef2f7;border-radius:10px;padding:14px 16px;">
+              <p style="margin:0 0 4px;color:#64748b;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;">Now with</p>
+              <p style="margin:0;color:#0f172a;font-size:14px;font-weight:700;">${escapeHtml(p.newLabel || '')}</p>
+              ${p.oldLabel ? `<p style="margin:6px 0 0;color:#94a3b8;font-size:12px;">Previously: ${escapeHtml(p.oldLabel)}</p>` : ''}
+            </td></tr>
+          </table>`,
+      }),
+    }
+  }
+
   if (type === 'reply') {
     return {
       subject: `A representative replied to your complaint (${code})`,
