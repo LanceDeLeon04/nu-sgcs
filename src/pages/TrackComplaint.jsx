@@ -141,7 +141,9 @@ export default function TrackComplaint() {
           <div className="bg-white rounded-2xl border border-slate-100 card-glow p-5 sm:p-6">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0">
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">{data.subcategory ? `${data.category} › ${data.subcategory}` : data.category}</p>
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                  {data.unrouted ? 'Not yet routed' : [data.department, data.unit, data.concern].filter(Boolean).join(' › ') || (data.subcategory ? `${data.category} › ${data.subcategory}` : data.category)}
+                </p>
                 <h2 className="text-lg font-bold text-slate-800 mt-0.5">{data.subject}</h2>
                 <p className="text-xs text-slate-400 mt-1">Filed {fmtDate(data.submitted_at)} · Last update {fmtDate(data.updated_at)}{data.is_anonymous ? ' · Anonymous' : ''}</p>
               </div>

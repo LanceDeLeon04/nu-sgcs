@@ -62,7 +62,7 @@ export default function Complaints() {
       }
       return true
     })
-  }, [rows, q, type, status, category, priority, assignee, session])
+  }, [rows, q, type, status, department, priority, assignee, session])
 
   return (
     <div>
