@@ -10,6 +10,7 @@ import { isConfigured } from './supabaseClient'
 import Landing from './pages/Landing.jsx'
 import Submit from './pages/Submit.jsx'
 import TrackComplaint from './pages/TrackComplaint.jsx'
+import OfficeCase from './pages/OfficeCase.jsx'
 import StaffLogin from './pages/staff/StaffLogin.jsx'
 import Dashboard from './pages/staff/Dashboard.jsx'
 import Complaints from './pages/staff/Complaints.jsx'
@@ -99,6 +100,7 @@ export default function App() {
       <Route path="/" element={<Landing />} />
       <Route path="/submit/:type?" element={<Submit />} />
       <Route path="/track/:code?" element={<TrackComplaint />} />
+      <Route path="/office/:ref" element={<OfficeCase />} />
 
       {/* Staff */}
       <Route path="/staff/login"

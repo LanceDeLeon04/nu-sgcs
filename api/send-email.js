@@ -195,6 +195,38 @@ function buildMessage(type, p) {
     }
   }
 
+  if (type === 'office_forward') {
+    const office = escapeHtml(p.unitName || 'Office')
+    return {
+      subject: `New concern forwarded to ${office} (${p.referenceNo || ''})`,
+      html: wrap({
+        eyebrow: 'Concern forwarded', heading: `A concern was forwarded to ${office}`,
+        bodyHtml: `
+          <p style="margin:0 0 12px;"><b>Notice:</b> The Council of Leaders received a concern routed to your office and is forwarding it to you for action.</p>
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 16px;">
+            <tr><td style="background:#f8fafc;border:1px solid #eef2f7;border-radius:10px;padding:14px 16px;">
+              <p style="margin:0 0 4px;color:#64748b;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;">Summary</p>
+              <p style="margin:0 0 6px;color:#0f172a;font-size:14px;font-weight:700;">${escapeHtml(p.subject || '')}</p>
+              <p style="margin:0;color:#334155;font-size:13.5px;">${nl2br(p.summary || '')}</p>
+            </td></tr>
+          </table>
+          <p style="margin:0 0 10px;">Use the secure link below to view the full concern and post an update once it's addressed — the case updates automatically on our end when you do.</p>
+          <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 16px;">
+            <tr><td style="background:${NUBLUE};border-radius:8px;">
+              <a href="${escapeHtml(p.officeUrl || '')}" style="display:inline-block;padding:10px 20px;color:#ffffff;font-size:13px;font-weight:700;text-decoration:none;">Open &amp; update this case &rarr;</a>
+            </td></tr>
+          </table>
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+            <tr><td style="background:#eef4ff;border:1px solid #d9e6ff;border-radius:12px;padding:16px 20px;">
+              <p style="margin:0 0 4px;color:${NUBLUE};font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;">Access code (required on the link above)</p>
+              <p style="margin:0;color:${NUBLUE_DARK};font-size:22px;font-weight:800;font-family:Consolas,Menlo,monospace;letter-spacing:.08em;">${escapeHtml(p.code || '')}</p>
+            </td></tr>
+          </table>
+          <p style="margin:14px 0 0;color:#94a3b8;font-size:11.5px;">Keep this code confidential — it is the only thing that unlocks the details of this concern.</p>`,
+      }),
+    }
+  }
+
   return null
 }
 

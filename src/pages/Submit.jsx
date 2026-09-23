@@ -200,6 +200,24 @@ function SubmitForm({ type }) {
           trackUrl: `${window.location.origin}/track/${data}`,
         })
       }
+      // Auto-forward to the routed office's email, if one is on file — no
+      // manual step needed. If the office has no email yet, this just
+      // records that a handler will need to forward it manually.
+      try {
+        const { data: fwd } = await supabase.rpc('gc_get_office_forward', { p_ref: data })
+        if (fwd && fwd.to_email && !fwd.already_sent) {
+          notifyByEmail({
+            type: 'office_forward',
+            to: fwd.to_email,
+            unitName: fwd.unit_name,
+            referenceNo: fwd.reference_no,
+            subject: f.subject,
+            summary: f.description,
+            code: fwd.code,
+            officeUrl: `${window.location.origin}/office/${fwd.reference_no}`,
+          })
+        }
+      } catch { /* forwarding is best-effort; staff can still forward manually */ }
       window.scrollTo({ top: 0, behavior: 'smooth' })
     } catch (err) {
       setError(err.message || 'Something went wrong. Please try again.')

@@ -23,6 +23,8 @@ function describe(u) {
   if (u.kind === 'public_response') return 'Public response'
   if (u.kind === 'internal_note') return 'Internal note'
   if (u.kind === 'follow_up') return 'Complainant follow-up'
+  if (u.kind === 'office_forward') return 'Forwarded to office'
+  if (u.kind === 'office_update') return 'Update from office'
   return u.message
 }
 
@@ -50,6 +52,8 @@ export default function ComplaintDetail() {
   const [reassignSel, setReassignSel] = useState({ concern_id: '', office_unsure: false })
   const [reassignBusy, setReassignBusy] = useState(false)
   const [unit, setUnit] = useState(undefined) // undefined = not loaded yet, null = complaint has no unit_id
+  const [manualEmail, setManualEmail] = useState('')
+  const [forwardBusy, setForwardBusy] = useState(false)
 
   const load = useCallback(async () => {
     const [{ data: comp }, { data: ups }, { data: att }, { data: st }] = await Promise.all([
@@ -151,6 +155,23 @@ export default function ComplaintDetail() {
     if (error) { setErr(error.message); return }
     setReassignOpen(false)
     setReassignSel({ concern_id: '', office_unsure: false })
+    // The new office may already have an email on file — forward automatically.
+    try {
+      const ref = c.tracking_code || c.reference_no
+      const { data: fwd } = await supabase.rpc('gc_get_office_forward', { p_ref: ref })
+      if (fwd && fwd.to_email && !fwd.already_sent) {
+        notifyByEmail({
+          type: 'office_forward',
+          to: fwd.to_email,
+          unitName: fwd.unit_name,
+          referenceNo: fwd.reference_no,
+          subject: c.subject,
+          summary: c.description,
+          code: fwd.code,
+          officeUrl: `${window.location.origin}/office/${fwd.reference_no}`,
+        })
+      }
+    } catch { /* best-effort */ }
     if (c.email) {
       notifyByEmail({
         type: 'reassigned',
@@ -163,6 +184,27 @@ export default function ComplaintDetail() {
         oldLabel: data.old_label,
       })
     }
+    load()
+  }
+
+  const forwardManually = async () => {
+    const email = manualEmail.trim()
+    if (!email) { setErr('Enter the office email to forward this to.'); return }
+    setForwardBusy(true); setErr('')
+    const { data, error } = await supabase.rpc('gc_set_office_forward', { p_id: id, p_email: email })
+    setForwardBusy(false)
+    if (error) { setErr(error.message); return }
+    notifyByEmail({
+      type: 'office_forward',
+      to: data.to_email,
+      unitName: unit?.name || c.office_unit || 'Office',
+      referenceNo: data.reference_no,
+      subject: c.subject,
+      summary: c.description,
+      code: data.code,
+      officeUrl: `${window.location.origin}/office/${data.reference_no}`,
+    })
+    setManualEmail('')
     load()
   }
 
@@ -207,15 +249,34 @@ export default function ComplaintDetail() {
                   )}
                   {unit !== undefined && !isUnrouted(c) && c.department_id && (
                     unit && (unit.email || unit.head_email) ? (
-                      <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-600">
-                        {unit.email && <span className="inline-flex items-center gap-1"><Mail size={12} className="text-nublue-500" /> {unit.email}</span>}
-                        {unit.head_email && <span className="inline-flex items-center gap-1 text-slate-400">(head: {unit.head_email})</span>}
-                      </p>
+                      <div className="mt-2">
+                        <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-600">
+                          {unit.email && <span className="inline-flex items-center gap-1"><Mail size={12} className="text-nublue-500" /> {unit.email}</span>}
+                          {unit.head_email && <span className="inline-flex items-center gap-1 text-slate-400">(head: {unit.head_email})</span>}
+                        </p>
+                        {c.office_forwarded_at ? (
+                          <p className="mt-1 text-[11px] font-semibold text-emerald-700">
+                            Auto-forwarded to {c.office_forward_email} on {fmtDateTime(c.office_forwarded_at)} — the office has a secure update link, no manual sending needed.
+                          </p>
+                        ) : (
+                          <p className="mt-1 text-[11px] text-slate-500">Forwarding…</p>
+                        )}
+                      </div>
                     ) : (
-                      <p className="mt-2 inline-flex items-start gap-1.5 text-xs font-semibold text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 max-w-md">
-                        <AlertTriangle size={13} className="shrink-0 mt-0.5" />
-                        {unit ? `${unit.name} has` : 'This office has'} no email on file yet — please follow up and forward this concern manually.
-                      </p>
+                      <div className="mt-2 max-w-md">
+                        <p className="inline-flex items-start gap-1.5 text-xs font-semibold text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5">
+                          <AlertTriangle size={13} className="shrink-0 mt-0.5" />
+                          {unit ? `${unit.name} has` : 'This office has'} no email on file — {c.office_forwarded_at ? `manually forwarded to ${c.office_forward_email} on ${fmtDateTime(c.office_forwarded_at)}.` : 'type an address below to forward it.'}
+                        </p>
+                        <div className="mt-2 flex gap-2">
+                          <input value={manualEmail} onChange={(e) => setManualEmail(e.target.value)} placeholder="office@example.edu.ph"
+                            className="flex-1 border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 placeholder:text-slate-400 bg-white outline-none focus:ring-2 focus:ring-nublue-500" />
+                          <button type="button" disabled={forwardBusy} onClick={forwardManually}
+                            className="text-xs font-semibold bg-nublue-600 hover:bg-nublue-700 text-white px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition disabled:opacity-50">
+                            <Forward size={12} /> {c.office_forwarded_at ? 'Re-forward' : 'Forward'}
+                          </button>
+                        </div>
+                      </div>
                     )
                   )}
                   <h2 className="text-lg font-bold text-slate-800 mt-0.5 break-words">{c.subject}</h2>
@@ -260,7 +321,7 @@ export default function ComplaintDetail() {
               <ul className="space-y-4">
                 {updates.map((u) => {
                   const note = u.kind === 'internal_note'
-                  const message = ['public_response', 'internal_note', 'follow_up'].includes(u.kind)
+                  const message = ['public_response', 'internal_note', 'follow_up', 'office_update'].includes(u.kind)
                   return (
                     <li key={u.id} className="flex gap-3">
                       <div className={`w-2.5 h-2.5 rounded-full mt-1.5 shrink-0 ${note ? 'bg-amber-400' : u.kind === 'public_response' ? 'bg-nublue-600' : u.kind === 'follow_up' ? 'bg-nugold-500' : 'bg-slate-300'}`} />
