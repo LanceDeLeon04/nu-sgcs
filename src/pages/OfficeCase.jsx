@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom'
 import { Lock, Loader2, Send, CheckCircle2, ShieldCheck } from 'lucide-react'
 import PublicShell from '../components/PublicShell.jsx'
 import { supabase } from '../supabaseClient'
+import { notifyByEmail } from '../lib/email.js'
 import { STATUSES, fmtDateTime } from '../lib/constants.js'
 
 const input = 'w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-nublue-500 bg-white'
@@ -35,9 +36,19 @@ export default function OfficeCase() {
     e.preventDefault()
     if (!message.trim()) return
     setPosting(true); setErr('')
-    const { error } = await supabase.rpc('gc_office_submit_update', { p_ref: ref, p_code: code.trim(), p_message: message.trim() })
+    const { data, error } = await supabase.rpc('gc_office_submit_update', { p_ref: ref, p_code: code.trim(), p_message: message.trim() })
     setPosting(false)
     if (error) { setErr(error.message); return }
+    if (data?.notify && data.to_email) {
+      notifyByEmail({
+        type: 'reply',
+        to: data.to_email,
+        name: data.name,
+        trackingCode: data.tracking_code,
+        trackUrl: `${window.location.origin}/track/${data.tracking_code}`,
+        message: data.message,
+      })
+    }
     setMessage('')
     setPosted(true)
     setTimeout(() => setPosted(false), 4000)
