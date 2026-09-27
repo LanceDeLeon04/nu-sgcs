@@ -1,10 +1,11 @@
 import React, { useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { Lock, Loader2, Send, CheckCircle2, ShieldCheck } from 'lucide-react'
+import { Lock, Loader2, Send, CheckCircle2, ShieldCheck, Undo2, AlertTriangle } from 'lucide-react'
 import PublicShell from '../components/PublicShell.jsx'
 import { supabase } from '../supabaseClient'
 import { notifyByEmail } from '../lib/email.js'
 import { STATUSES, fmtDate, fmtDateTime } from '../lib/constants.js'
+import OfficePicker from '../components/OfficePicker.jsx'
 
 const input = 'w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-nublue-500 bg-white'
 
@@ -20,6 +21,12 @@ export default function OfficeCase() {
   const [message, setMessage] = useState('')
   const [posting, setPosting] = useState(false)
   const [posted, setPosted] = useState(false)
+
+  const [redirectOpen, setRedirectOpen] = useState(false)
+  const [redirectSel, setRedirectSel] = useState({ concern_id: '', office_unsure: false })
+  const [redirectReason, setRedirectReason] = useState('')
+  const [redirectBusy, setRedirectBusy] = useState(false)
+  const [redirectErr, setRedirectErr] = useState('')
 
   const unlock = async (e) => {
     e.preventDefault()
@@ -52,6 +59,25 @@ export default function OfficeCase() {
     setMessage('')
     setPosted(true)
     setTimeout(() => setPosted(false), 4000)
+  }
+
+  const submitRedirect = async (e) => {
+    e.preventDefault()
+    setRedirectErr('')
+    if (!redirectSel.concern_id) { setRedirectErr('Choose the department, unit and concern this should go to.'); return }
+    if (redirectReason.trim().length < 10) { setRedirectErr('Please explain why this should go elsewhere (at least 10 characters).'); return }
+    setRedirectBusy(true)
+    const { data, error } = await supabase.rpc('gc_office_request_redirect', {
+      p_ref: ref, p_code: code.trim(), p_concern_id: redirectSel.concern_id, p_reason: redirectReason.trim(),
+    })
+    setRedirectBusy(false)
+    if (error) { setRedirectErr(error.message); return }
+    setRedirectOpen(false)
+    setRedirectSel({ concern_id: '', office_unsure: false })
+    setRedirectReason('')
+    // Refresh the case so the "pending review" banner shows immediately.
+    const { data: refreshed } = await supabase.rpc('gc_office_get_case', { p_ref: ref, p_code: code.trim() })
+    if (refreshed) setC(refreshed)
   }
 
   if (!c) {
@@ -92,6 +118,17 @@ export default function OfficeCase() {
           <span className="inline-block mt-2 text-xs font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-700">
             {STATUSES[c.status]?.label || c.status}
           </span>
+        )}
+
+        {c.redirect_requested_label && (
+          <div className="mt-4 bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-start gap-2.5">
+            <AlertTriangle size={16} className="text-amber-600 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold text-amber-900">Redirect requested — pending Council review</p>
+              <p className="text-xs text-amber-800 mt-0.5">You asked to send this to <span className="font-semibold">{c.redirect_requested_label}</span> on {fmtDateTime(c.redirect_requested_at)}.</p>
+              <p className="text-xs text-amber-700 mt-1 italic">"{c.redirect_requested_reason}"</p>
+            </div>
+          </div>
         )}
 
         <div className="bg-white rounded-2xl border border-slate-100 card-glow p-5 mt-4">
@@ -139,6 +176,37 @@ export default function OfficeCase() {
             </ul>
           </div>
         )}
+
+        <div className="bg-white rounded-2xl border border-slate-100 card-glow p-5 mt-4">
+          <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-1 flex items-center gap-1.5"><Undo2 size={13} /> Wrongly routed to your office?</p>
+          <p className="text-xs text-slate-500 mb-2">If this doesn't belong with you, request that the Council send it to the correct department, unit and concern instead. A reason is required, and the case stays with your office until Council staff act on the request.</p>
+          {!redirectOpen ? (
+            <button type="button" onClick={() => setRedirectOpen(true)}
+              className="text-xs font-semibold text-nublue-600 hover:text-nublue-800">
+              Request a redirect
+            </button>
+          ) : (
+            <form onSubmit={submitRedirect} className="space-y-3">
+              <OfficePicker value={redirectSel} onChange={setRedirectSel} />
+              <div>
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Reason (required)</p>
+                <textarea rows={3} value={redirectReason} onChange={(e) => setRedirectReason(e.target.value)}
+                  className={`${input} resize-y`} placeholder="e.g. This concerns cafeteria pricing, not our office — it should go to the Business Office." />
+              </div>
+              {redirectErr && <p className="text-xs text-red-600">{redirectErr}</p>}
+              <div className="flex gap-2">
+                <button type="submit" disabled={redirectBusy || !redirectSel.concern_id || redirectReason.trim().length < 10}
+                  className="text-xs font-semibold bg-nublue-600 hover:bg-nublue-700 text-white px-4 py-2 rounded-xl flex items-center gap-1.5 transition disabled:opacity-50">
+                  {redirectBusy ? <Loader2 size={13} className="animate-spin" /> : <Undo2 size={13} />} Send request
+                </button>
+                <button type="button" onClick={() => { setRedirectOpen(false); setRedirectErr(''); setRedirectSel({ concern_id: '', office_unsure: false }); setRedirectReason('') }}
+                  className="text-xs font-semibold text-slate-500 hover:text-slate-700 px-4 py-2 rounded-xl transition">
+                  Cancel
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
 
         <div className="bg-white rounded-2xl border border-slate-100 card-glow p-5 mt-4">
           <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Post an update</p>

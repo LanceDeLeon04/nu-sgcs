@@ -25,6 +25,7 @@ function describe(u) {
   if (u.kind === 'follow_up') return 'Complainant follow-up'
   if (u.kind === 'office_forward') return 'Forwarded to office'
   if (u.kind === 'office_update') return 'Update from office'
+  if (u.kind === 'office_redirect_request') return 'Office requested redirect'
   return u.message
 }
 
@@ -147,6 +148,18 @@ export default function ComplaintDetail() {
     try { await navigator.clipboard.writeText(c.tracking_code); setCopied(true); setTimeout(() => setCopied(false), 1500) } catch { /* ignore */ }
   }
 
+  const acceptRedirectRequest = () => {
+    setReassignOpen(true)
+    setReassignSel({ concern_id: c.redirect_requested_concern_id || '', office_unsure: false })
+  }
+
+  const dismissRedirectRequest = async () => {
+    setErr('')
+    const { error } = await supabase.rpc('gc_dismiss_redirect_request', { p_id: id })
+    if (error) { setErr(error.message); return }
+    load()
+  }
+
   const reassign = async () => {
     if (!reassignSel.concern_id) { setErr('Choose a department, unit and concern to move this to.'); return }
     setReassignBusy(true); setErr('')
@@ -262,6 +275,27 @@ export default function ComplaintDetail() {
                     <p className="mt-1 inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 bg-amber-100 border border-amber-300 rounded-full px-2 py-0.5">
                       <AlertTriangle size={11} /> Strong language detected in this submission
                     </p>
+                  )}
+                  {c.redirect_requested_label && (
+                    <div className="mt-2 max-w-md bg-amber-50 border border-amber-200 rounded-xl p-3">
+                      <p className="text-xs font-bold text-amber-900 flex items-center gap-1.5">
+                        <Forward size={12} /> Office says this was wrongly routed
+                      </p>
+                      <p className="text-xs text-amber-800 mt-1">Suggests: <span className="font-semibold">{c.redirect_requested_label}</span> · requested {fmtDateTime(c.redirect_requested_at)}</p>
+                      <p className="text-xs text-amber-700 mt-1 italic">"{c.redirect_requested_reason}"</p>
+                      <div className="flex gap-2 mt-2">
+                        {isAdmin && (
+                          <button type="button" onClick={acceptRedirectRequest}
+                            className="text-[11px] font-semibold bg-nugold-500 hover:bg-nugold-400 text-nublue-900 px-2.5 py-1 rounded-lg transition">
+                            Redirect now
+                          </button>
+                        )}
+                        <button type="button" onClick={dismissRedirectRequest}
+                          className="text-[11px] font-semibold text-amber-800 hover:text-amber-900 px-2.5 py-1 rounded-lg transition">
+                          Dismiss
+                        </button>
+                      </div>
+                    </div>
                   )}
                   {unit !== undefined && !isUnrouted(c) && c.department_id && (
                     unit && (unit.email || unit.head_email) ? (
