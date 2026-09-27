@@ -215,6 +215,16 @@ Non-confidential complaints and all feedback are unaffected.
   `gc_attachments` / evidence storage so non-admin staff can't read a confidential case's content
   directly, and adds the `gc_office_update_status` RPC for the office portal.
 
+## Evidence required on complaints
+
+Formal complaints now require **at least one evidence attachment** (1–3 files: JPG, PNG, WebP or
+PDF, 5 MB each). Feedback is unaffected — attachments there remain unavailable/optional as before.
+Both the submission form and `gc_submit_complaint()` enforce this, so it can't be bypassed by
+calling the RPC directly.
+
+- **Run once** (after `migration_confidential_complaints.sql`): SQL Editor → paste
+  `migration_evidence_required.sql` → Run. Safe to re-run.
+
 ## Customizing
 
 - Categories: `src/lib/constants.js` **and** the `v_categories` array in `gc_submit_complaint()` / `gc_submit_feedback()` (keep in sync).

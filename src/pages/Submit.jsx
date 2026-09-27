@@ -150,6 +150,7 @@ function SubmitForm({ type }) {
     if (!f.concern_id && !f.office_unsure) return setError('Please choose a department, unit and concern (or select "I\'m not sure").')
     if (f.subject.trim().length < 5) return setError('Please enter a subject (at least 5 characters).')
     if (f.description.trim().length < minDesc) return setError(`Please write at least ${minDesc} characters in the description.`)
+    if (isComplaint && files.length === 0) return setError('Please attach at least one file as evidence.')
     if (!anon && !f.complainant_name.trim()) return setError(isComplaint ? 'Please enter your full name.' : 'Please enter your name, or send the feedback anonymously.')
     if (isComplaint) {
       if (!isValidStudentId(f.student_id)) return setError(`Please enter your student ID in this format: ${STUDENT_ID_HINT}.`)
@@ -429,8 +430,8 @@ function SubmitForm({ type }) {
         {/* Evidence (complaints only) */}
         {isComplaint && (
           <section className="bg-white rounded-2xl border border-slate-100 card-glow p-5 sm:p-6">
-            <h2 className="font-bold text-slate-800 mb-1">3. Evidence <span className="text-xs font-medium text-slate-400">(optional)</span></h2>
-            <p className="text-xs text-slate-500 mb-3">Up to {MAX_FILES} files · JPG, PNG, WebP or PDF · 5 MB each</p>
+            <h2 className="font-bold text-slate-800 mb-1">3. Evidence <span className="text-xs font-medium text-red-500">*</span></h2>
+            <p className="text-xs text-slate-500 mb-3">Required · Up to {MAX_FILES} files · JPG, PNG, WebP or PDF · 5 MB each</p>
             {files.length > 0 && (
               <ul className="space-y-2 mb-3">
                 {files.map((file, i) => (
