@@ -21,6 +21,8 @@ revoke all on function public.gc_updates_before_insert() from public, anon, auth
 -- 2. gc_office_submit_update now returns what the client needs to also
 --    email the student (mirrors the staff "reply" notification). Only
 --    returned to the caller who already proved they hold the 4-digit code.
+--    Return type changed (void -> jsonb), so the old signature must be dropped first.
+drop function if exists public.gc_office_submit_update(text, text, text);
 create or replace function public.gc_office_submit_update(p_ref text, p_code text, p_message text)
 returns jsonb language plpgsql security definer set search_path = public as $$
 declare
