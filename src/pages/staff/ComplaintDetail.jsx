@@ -169,6 +169,14 @@ export default function ComplaintDetail() {
           summary: c.description,
           code: fwd.code,
           officeUrl: `${window.location.origin}/office/${fwd.reference_no}`,
+          itemType: fwd.type,
+          department: fwd.department, unit: fwd.unit, concern: fwd.concern, category: fwd.category,
+          incidentDate: fwd.incident_date, incidentLocation: fwd.incident_location,
+          respondent: fwd.respondent, desiredOutcome: fwd.desired_outcome,
+          isAnonymous: fwd.is_anonymous,
+          complainantName: fwd.complainant_name, studentId: fwd.student_id,
+          complainantEmail: fwd.complainant_email, contactNo: fwd.contact_no,
+          program: fwd.program, yearLevel: fwd.year_level,
         })
       }
     } catch { /* best-effort */ }
@@ -203,6 +211,14 @@ export default function ComplaintDetail() {
       summary: c.description,
       code: data.code,
       officeUrl: `${window.location.origin}/office/${data.reference_no}`,
+      itemType: data.type,
+      department: data.department, unit: data.unit, concern: data.concern, category: data.category,
+      incidentDate: data.incident_date, incidentLocation: data.incident_location,
+      respondent: data.respondent, desiredOutcome: data.desired_outcome,
+      isAnonymous: data.is_anonymous,
+      complainantName: data.complainant_name, studentId: data.student_id,
+      complainantEmail: data.complainant_email, contactNo: data.contact_no,
+      program: data.program, yearLevel: data.year_level,
     })
     setManualEmail('')
     load()

@@ -215,6 +215,14 @@ function SubmitForm({ type }) {
             summary: f.description,
             code: fwd.code,
             officeUrl: `${window.location.origin}/office/${fwd.reference_no}`,
+            itemType: fwd.type,
+            department: fwd.department, unit: fwd.unit, concern: fwd.concern, category: fwd.category,
+            incidentDate: fwd.incident_date, incidentLocation: fwd.incident_location,
+            respondent: fwd.respondent, desiredOutcome: fwd.desired_outcome,
+            isAnonymous: fwd.is_anonymous,
+            complainantName: fwd.complainant_name, studentId: fwd.student_id,
+            complainantEmail: fwd.complainant_email, contactNo: fwd.contact_no,
+            program: fwd.program, yearLevel: fwd.year_level,
           })
         }
       } catch { /* forwarding is best-effort; staff can still forward manually */ }

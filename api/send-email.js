@@ -197,20 +197,61 @@ function buildMessage(type, p) {
 
   if (type === 'office_forward') {
     const office = escapeHtml(p.unitName || 'Office')
+    const itemLabel = p.itemType === 'feedback' ? 'feedback' : 'complaint'
+    const officeLabel = [p.department, p.unit, p.concern].filter(Boolean).map(escapeHtml).join(' &rsaquo; ')
+      || escapeHtml(p.category || '')
+
+    // Reporting student block — respects is_anonymous (feedback only; complaints are never anonymous).
+    const identityRows = p.isAnonymous
+      ? `<p style="margin:0;color:#64748b;font-size:13.5px;font-style:italic;">Filed anonymously — no identity on file.</p>`
+      : [
+          ['Name', p.complainantName],
+          ['Student ID', p.studentId],
+          ['Email', p.complainantEmail],
+          ['Contact no.', p.contactNo],
+          ['Program', p.program],
+          ['Year level', p.yearLevel],
+        ].filter(([, v]) => v).map(([k, v]) => `
+            <tr>
+              <td style="padding:3px 0;color:#64748b;font-size:12.5px;width:110px;">${escapeHtml(k)}</td>
+              <td style="padding:3px 0;color:#0f172a;font-size:13.5px;font-weight:600;">${escapeHtml(v)}</td>
+            </tr>`).join('')
+    const identityHtml = p.isAnonymous ? identityRows
+      : `<table role="presentation" width="100%" cellpadding="0" cellspacing="0">${identityRows}</table>`
+
+    // Extra case details — incident date/location, respondent, desired outcome (only rendered if present).
+    const detailRows = [
+      ['Incident date', p.incidentDate ? new Date(p.incidentDate).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' }) : null],
+      ['Incident location', p.incidentLocation],
+      ['Concerned person/office', p.respondent],
+      ['Desired outcome', p.desiredOutcome],
+    ].filter(([, v]) => v).map(([k, v]) => `
+          <p style="margin:0 0 8px;"><span style="color:#64748b;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;">${escapeHtml(k)}</span><br/><span style="color:#334155;font-size:13.5px;">${nl2br(v)}</span></p>`).join('')
+
     return {
-      subject: `New concern forwarded to ${office} (${p.referenceNo || ''})`,
+      subject: `New ${itemLabel} forwarded to ${office} (${p.referenceNo || ''})`,
       html: wrap({
-        eyebrow: 'Concern forwarded', heading: `A concern was forwarded to ${office}`,
+        eyebrow: `${itemLabel === 'feedback' ? 'Feedback' : 'Complaint'} forwarded`, heading: `A ${itemLabel} was forwarded to ${office}`,
         bodyHtml: `
-          <p style="margin:0 0 12px;"><b>Notice:</b> The Council of Leaders received a concern routed to your office and is forwarding it to you for action.</p>
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 16px;">
+          <p style="margin:0 0 12px;"><b>Notice:</b> The Council of Leaders received a ${itemLabel} routed to your office and is forwarding the full report to you for action.</p>
+
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 14px;">
             <tr><td style="background:#f8fafc;border:1px solid #eef2f7;border-radius:10px;padding:14px 16px;">
-              <p style="margin:0 0 4px;color:#64748b;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;">Summary</p>
+              ${officeLabel ? `<p style="margin:0 0 6px;color:#64748b;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;">${officeLabel}</p>` : ''}
               <p style="margin:0 0 6px;color:#0f172a;font-size:14px;font-weight:700;">${escapeHtml(p.subject || '')}</p>
               <p style="margin:0;color:#334155;font-size:13.5px;">${nl2br(p.summary || '')}</p>
+              ${detailRows ? `<div style="margin-top:10px;padding-top:10px;border-top:1px solid #e2e8f0;">${detailRows}</div>` : ''}
             </td></tr>
           </table>
-          <p style="margin:0 0 10px;">Use the secure link below to view the full concern and post an update once it's addressed — the case updates automatically on our end when you do.</p>
+
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 16px;">
+            <tr><td style="background:#fffdf5;border:1px solid #ffecad;border-radius:10px;padding:14px 16px;">
+              <p style="margin:0 0 8px;color:#805f00;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;">Reporting student</p>
+              ${identityHtml}
+            </td></tr>
+          </table>
+
+          <p style="margin:0 0 10px;">Use the secure link below to view this case and post an update once it's addressed — the case updates automatically on our end when you do.</p>
           <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 16px;">
             <tr><td style="background:${NUBLUE};border-radius:8px;">
               <a href="${escapeHtml(p.officeUrl || '')}" style="display:inline-block;padding:10px 20px;color:#ffffff;font-size:13px;font-weight:700;text-decoration:none;">Open &amp; update this case &rarr;</a>
@@ -222,7 +263,7 @@ function buildMessage(type, p) {
               <p style="margin:0;color:${NUBLUE_DARK};font-size:22px;font-weight:800;font-family:Consolas,Menlo,monospace;letter-spacing:.08em;">${escapeHtml(p.code || '')}</p>
             </td></tr>
           </table>
-          <p style="margin:14px 0 0;color:#94a3b8;font-size:11.5px;">Keep this code confidential — it is the only thing that unlocks the details of this concern.</p>`,
+          <p style="margin:14px 0 0;color:#94a3b8;font-size:11.5px;">Please handle this report's details confidentially and in line with your office's data-privacy obligations.</p>`,
       }),
     }
   }

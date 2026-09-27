@@ -166,6 +166,21 @@ they still don't find a match, the submission is saved as **Not yet routed** for
   *Route this to an office* for an unrouted one). Pick the correct Department › Unit › Concern and
   save; the student is notified by email (and sees it on their tracking page, for complaints).
 
+## Full report details on forwarding
+
+The forwarding email (and the office's secure `/office/:ref` portal) include the **complete report**:
+department › unit › concern, incident date/location, "concerned person/office", desired outcome, and
+the **reporting student's identity** (name, student ID, NU email, contact no., program, year level).
+Anonymous feedback still shows "Filed anonymously — no identity on file" instead — formal complaints
+are never anonymous, so their reporter's identity is always included.
+
+- **Run once** (after `migration_office_forwarding.sql`): SQL Editor → paste
+  `migration_office_forward_full_details.sql` → Run. Safe to re-run.
+- **Heads-up:** this removes the earlier privacy safeguard where the office never learned who filed
+  the case (useful when the "concerned person/office" might be someone at that same office). If that
+  matters for your institution, keep an eye on which units get sensitive respondent-vs-office
+  situations, or restrict who fills in unit emails.
+
 ## Unit emails
 
 Each unit can have an **office email** and a **unit head email** (both optional), set by admins

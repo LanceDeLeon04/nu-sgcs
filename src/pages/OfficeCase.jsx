@@ -4,7 +4,7 @@ import { Lock, Loader2, Send, CheckCircle2, ShieldCheck } from 'lucide-react'
 import PublicShell from '../components/PublicShell.jsx'
 import { supabase } from '../supabaseClient'
 import { notifyByEmail } from '../lib/email.js'
-import { STATUSES, fmtDateTime } from '../lib/constants.js'
+import { STATUSES, fmtDate, fmtDateTime } from '../lib/constants.js'
 
 const input = 'w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-nublue-500 bg-white'
 
@@ -94,11 +94,33 @@ export default function OfficeCase() {
           </span>
         )}
 
+        <div className="bg-white rounded-2xl border border-slate-100 card-glow p-5 mt-4">
+          <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Reporting student</p>
+          {c.is_anonymous ? (
+            <p className="text-sm text-slate-500 italic">Filed anonymously — no identity on file.</p>
+          ) : (
+            <div className="grid sm:grid-cols-2 gap-x-4 gap-y-2 text-sm">
+              <div><span className="text-slate-400">Name:</span> <span className="text-slate-700 font-medium">{c.complainant_name || '—'}</span></div>
+              <div><span className="text-slate-400">Student ID:</span> <span className="text-slate-700 font-medium">{c.student_id || '—'}</span></div>
+              <div><span className="text-slate-400">Email:</span> <span className="text-slate-700 font-medium">{c.complainant_email || '—'}</span></div>
+              <div><span className="text-slate-400">Contact no.:</span> <span className="text-slate-700 font-medium">{c.contact_no || '—'}</span></div>
+              <div><span className="text-slate-400">Program:</span> <span className="text-slate-700 font-medium">{c.program || '—'}</span></div>
+              <div><span className="text-slate-400">Year level:</span> <span className="text-slate-700 font-medium">{c.year_level || '—'}</span></div>
+            </div>
+          )}
+        </div>
+
         <div className="bg-white rounded-2xl border border-slate-100 card-glow p-5 mt-4 space-y-4">
           <div>
             <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Description</p>
             <p className="text-sm text-slate-700 whitespace-pre-wrap mt-1">{c.description}</p>
           </div>
+          {(c.incident_date || c.incident_location) && (
+            <div className="grid sm:grid-cols-2 gap-x-4 gap-y-1">
+              {c.incident_date && <div><p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Incident date</p><p className="text-sm text-slate-700 mt-0.5">{fmtDate(c.incident_date)}</p></div>}
+              {c.incident_location && <div><p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Incident location</p><p className="text-sm text-slate-700 mt-0.5">{c.incident_location}</p></div>}
+            </div>
+          )}
           {c.respondent && <div><p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Concerned person/office</p><p className="text-sm text-slate-700 mt-1">{c.respondent}</p></div>}
           {c.desired_outcome && <div><p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Desired outcome</p><p className="text-sm text-slate-700 mt-1">{c.desired_outcome}</p></div>}
           {c.resolution_summary && <div><p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Council's resolution notes</p><p className="text-sm text-slate-700 mt-1">{c.resolution_summary}</p></div>}
