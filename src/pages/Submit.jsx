@@ -80,7 +80,7 @@ export function TypeChooser() {
 /* The form (feedback or complaint)                                    */
 /* ------------------------------------------------------------------ */
 const blank = {
-  is_anonymous: false, complainant_name: '', student_id: '', email: '', contact_no: '', department: '', program: '', year_level: '',
+  is_anonymous: false, is_confidential: false, complainant_name: '', student_id: '', email: '', contact_no: '', department: '', program: '', year_level: '',
   concern_id: '', office_unsure: false, feedback_type: '',
   subject: '', description: '', incident_date: '', incident_location: '', respondent: '', desired_outcome: '',
   website: '', // honeypot
@@ -174,7 +174,7 @@ function SubmitForm({ type }) {
           if (upErr) throw new Error(`Could not upload "${file.name}": ${upErr.message}`)
           attachments.push({ path, name: file.name, type: file.type, size: file.size })
         }
-        const payload = { ...f, is_anonymous: false, submission_id: sid, attachments }
+        const payload = { ...f, is_anonymous: false, is_confidential: f.is_confidential, submission_id: sid, attachments }
         delete payload.website
         if (payload.incident_date === '') delete payload.incident_date
         if (payload.concern_id === '') delete payload.concern_id
@@ -448,6 +448,19 @@ function SubmitForm({ type }) {
                 <input type="file" accept={ALLOWED.join(',')} multiple onChange={addFiles} className="hidden" />
               </label>
             )}
+          </section>
+        )}
+
+        {/* Confidentiality (complaints only) */}
+        {isComplaint && (
+          <section className="bg-white rounded-2xl border border-slate-100 card-glow p-5 sm:p-6">
+            <label className={`flex items-start gap-3 p-4 rounded-xl border cursor-pointer transition ${f.is_confidential ? 'border-nublue-400 bg-nublue-50' : 'border-slate-200 hover:bg-slate-50'}`}>
+              <input type="checkbox" checked={f.is_confidential} onChange={(e) => setF((p) => ({ ...p, is_confidential: e.target.checked }))} className="mt-1 accent-[#0033A0]" />
+              <div>
+                <p className="text-sm font-semibold text-slate-800 flex items-center gap-1.5"><ShieldCheck size={15} className="text-nublue-600" /> Mark as Confidential</p>
+                <p className="text-xs text-slate-500 mt-0.5">Only administrators and the concerned office will be able to see the full details of this complaint. Other Council staff will only see that it exists and its status.</p>
+              </div>
+            </label>
           </section>
         )}
 

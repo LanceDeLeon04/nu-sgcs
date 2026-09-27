@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { ArrowLeft, Paperclip, Download, EyeOff, Lock, Globe, Send, Loader2, Trash2, Copy, Check, Save, Star, Users, Forward, AlertTriangle, Mail } from 'lucide-react'
+import { ArrowLeft, Paperclip, Download, EyeOff, Lock, Globe, Send, Loader2, Trash2, Copy, Check, Save, Star, Users, Forward, AlertTriangle, Mail, ShieldAlert } from 'lucide-react'
 import Navbar from '../../components/Navbar.jsx'
 import { StatusBadge, PriorityBadge, TypeBadge } from '../../components/StatusBadge.jsx'
 import { supabase, EVIDENCE_BUCKET } from '../../supabaseClient'
@@ -58,7 +58,7 @@ export default function ComplaintDetail() {
 
   const load = useCallback(async () => {
     const [{ data: comp }, { data: ups }, { data: att }, { data: st }] = await Promise.all([
-      supabase.from('gc_complaints').select('*').eq('id', id).maybeSingle(),
+      supabase.from('gc_staff_complaints').select('*').eq('id', id).maybeSingle(),
       supabase.from('gc_updates').select('*').eq('complaint_id', id).order('created_at', { ascending: true }),
       supabase.from('gc_attachments').select('*').eq('complaint_id', id).order('uploaded_at'),
       supabase.from('gc_staff').select('user_id, full_name, position, role, is_active'),
@@ -241,6 +241,7 @@ export default function ComplaintDetail() {
   if (!c) return (<div><Navbar title="Complaint" /><p className="p-8 text-sm text-slate-600">Loading…</p></div>)
 
   const isFeedback = c.type === 'feedback'
+  const locked = c.is_confidential && !isAdmin
   const kindNow = isFeedback ? 'internal_note' : kind
   const statusKeys = isFeedback ? FEEDBACK_STATUS_KEYS : COMPLAINT_STATUS_KEYS
   const forwardDirty = (forwardTo ?? '').trim() !== (c.forwarded_to || '')
@@ -258,6 +259,15 @@ export default function ComplaintDetail() {
         </Link>
 
         {err && <div className="mb-4 text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl px-4 py-2.5">{err}</div>}
+
+        {c.is_confidential && (
+          <div className={`mb-4 flex items-start gap-2.5 rounded-xl px-4 py-3 text-sm ${locked ? 'bg-slate-50 border border-slate-200 text-slate-700' : 'bg-nublue-50 border border-nublue-100 text-nublue-800'}`}>
+            <ShieldAlert size={16} className="shrink-0 mt-0.5" />
+            {locked
+              ? <span>This complaint was marked <b>Confidential</b>. Only admins and the concerned office can see its full details; the office updates its status directly.</span>
+              : <span>This complaint is marked <b>Confidential</b>. Non-admin staff only see its status — you're seeing full details because you're an admin.</span>}
+          </div>
+        )}
 
         <div className="grid xl:grid-cols-3 gap-5">
           {/* MAIN */}
@@ -338,16 +348,22 @@ export default function ComplaintDetail() {
                 <div className="flex items-center gap-2">{!isFeedback && <PriorityBadge priority={c.priority} />}<StatusBadge status={c.status} /></div>
               </div>
 
+              {locked ? (
+                <div className="mt-5 bg-slate-50 rounded-xl px-4 py-3 text-sm text-slate-500 italic flex items-center gap-2"><Lock size={13} /> Contents hidden — confidential.</div>
+              ) : (
               <div className="mt-5 bg-slate-50 rounded-xl px-4 py-3 text-sm text-slate-700 whitespace-pre-wrap break-words">{c.description}</div>
+              )}
 
+              {!locked && (
               <div className="grid sm:grid-cols-2 gap-4 mt-5">
                 <Field label="Date of incident">{c.incident_date ? fmtDate(c.incident_date) : null}</Field>
                 <Field label="Location">{c.incident_location}</Field>
                 <Field label={isFeedback ? 'Office / person concerned' : 'Person / office concerned'}>{c.respondent}</Field>
                 <Field label="Desired outcome">{c.desired_outcome}</Field>
               </div>
+              )}
 
-              {files.length > 0 && (
+              {!locked && files.length > 0 && (
                 <div className="mt-5">
                   <p className={`${lbl} mb-2`}>Evidence</p>
                   <ul className="space-y-2">
@@ -392,6 +408,9 @@ export default function ComplaintDetail() {
                 })}
               </ul>
 
+              {locked ? (
+                <p className="mt-6 pt-5 border-t border-slate-100 text-xs text-slate-500 italic flex items-center gap-1.5"><Lock size={12} /> Only admins and the concerned office can post updates on a confidential complaint.</p>
+              ) : (
               <form onSubmit={post} className="mt-6 pt-5 border-t border-slate-100">
                 {isFeedback ? (
                   <p className="text-xs text-slate-700 mb-2 flex items-center gap-1.5"><Lock size={12} className="text-amber-500" /> Internal note — feedback isn't visible to the sender, so use notes to record forwarding and follow-ups.</p>
@@ -414,6 +433,7 @@ export default function ComplaintDetail() {
                   {posting ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />} {kindNow === 'public_response' ? 'Send reply' : 'Save note'}
                 </button>
               </form>
+              )}
             </div>
           </div>
 
@@ -422,10 +442,16 @@ export default function ComplaintDetail() {
             <div className="bg-white rounded-2xl border border-slate-100 card-glow p-5 space-y-4">
               <h3 className="font-bold text-slate-800">Handling</h3>
               <div><p className={`${lbl} mb-1`}>Status</p>
+                {locked ? (
+                  <div className={sel + ' bg-slate-50 flex items-center'}><StatusBadge status={c.status} /></div>
+                ) : (
                 <select className={sel} value={c.status} disabled={busy} onChange={(e) => changeStatus(e.target.value)}>
                   {statusKeys.map((k) => <option key={k} value={k}>{STATUSES[k].label}</option>)}
-                </select></div>
-              {isFeedback && (
+                </select>
+                )}
+                {locked && <p className="text-[11px] text-slate-500 mt-1">The concerned office updates this status directly.</p>}
+              </div>
+              {locked ? null : isFeedback && (
                 <div><p className={`${lbl} mb-1 flex items-center gap-1`}><Forward size={11} /> Forwarded to (office)</p>
                   <input value={forwardTo ?? ''} onChange={(e) => setForwardTo(e.target.value)} maxLength={200} className={sel} placeholder="e.g. Registrar's Office" />
                   {forwardDirty && (
@@ -435,11 +461,11 @@ export default function ComplaintDetail() {
                     </button>
                   )}</div>
               )}
-              {!isFeedback && <div><p className={`${lbl} mb-1`}>Priority</p>
+              {!locked && !isFeedback && <div><p className={`${lbl} mb-1`}>Priority</p>
                 <select className={sel} value={c.priority} disabled={busy} onChange={(e) => save({ priority: e.target.value })}>
                   {Object.entries(PRIORITIES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
                 </select></div>}
-              <div><p className={`${lbl} mb-1`}>Assigned to</p>
+              {!locked && <div><p className={`${lbl} mb-1`}>Assigned to</p>
                 <select className={sel} value={c.assigned_to || ''} disabled={busy} onChange={(e) => save({ assigned_to: e.target.value || null })}>
                   <option value="">Unassigned</option>
                   {assignees.map((t) => (
@@ -454,8 +480,8 @@ export default function ComplaintDetail() {
                     <button type="button" disabled={busy} onClick={() => save({ assigned_to: session.user.id })}
                       className="text-[11px] font-semibold text-nublue-600 hover:text-nublue-800 disabled:opacity-50">Assign to me</button>
                   )}
-                </div></div>
-              {!isFeedback && <div><p className={`${lbl} mb-1`}>Outcome / resolution summary</p>
+                </div></div>}
+              {!locked && !isFeedback && <div><p className={`${lbl} mb-1`}>Outcome / resolution summary</p>
                 <textarea rows={4} value={summary} onChange={(e) => setSummary(e.target.value)} className={`${sel} resize-y`}
                   placeholder="Shown to the complainant once resolved, closed or dismissed." />
                 {summaryDirty && (
@@ -468,7 +494,9 @@ export default function ComplaintDetail() {
 
             <div className="bg-white rounded-2xl border border-slate-100 card-glow p-5 space-y-3">
               <h3 className="font-bold text-slate-800">{isFeedback ? 'Sender' : 'Complainant'}</h3>
-              {c.is_anonymous ? (
+              {locked ? (
+                <p className="text-sm text-slate-500 italic flex items-center gap-2"><Lock size={15} /> Hidden — confidential.</p>
+              ) : c.is_anonymous ? (
                 <p className="text-sm text-slate-700 flex items-center gap-2"><EyeOff size={15} /> Sent anonymously — no personal details on record.</p>
               ) : (<>
                 <Field label="Name">{c.complainant_name}</Field>

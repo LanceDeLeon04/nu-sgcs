@@ -28,6 +28,9 @@ export default function OfficeCase() {
   const [redirectBusy, setRedirectBusy] = useState(false)
   const [redirectErr, setRedirectErr] = useState('')
 
+  const [statusBusy, setStatusBusy] = useState(false)
+  const [statusErr, setStatusErr] = useState('')
+
   const unlock = async (e) => {
     e.preventDefault()
     if (!/^[0-9]{4}$/.test(code.trim())) { setErr('Enter the 4-digit code from the email.'); return }
@@ -80,6 +83,26 @@ export default function OfficeCase() {
     if (refreshed) setC(refreshed)
   }
 
+  const updateStatus = async (newStatus) => {
+    if (!newStatus || newStatus === c.status) return
+    setStatusBusy(true); setStatusErr('')
+    const { data, error } = await supabase.rpc('gc_office_update_status', { p_ref: ref, p_code: code.trim(), p_status: newStatus })
+    setStatusBusy(false)
+    if (error) { setStatusErr(error.message); return }
+    if (data?.notify && data.to_email) {
+      notifyByEmail({
+        type: 'status',
+        to: data.to_email,
+        name: data.name,
+        trackingCode: data.tracking_code,
+        trackUrl: `${window.location.origin}/track/${data.tracking_code}`,
+        statusKey: data.status_key,
+        statusLabel: STATUSES[data.status_key]?.label || data.status_key,
+      })
+    }
+    setC((prev) => ({ ...prev, status: newStatus }))
+  }
+
   if (!c) {
     return (
       <PublicShell>
@@ -114,10 +137,25 @@ export default function OfficeCase() {
         <p className="text-xs text-slate-500 mt-1">
           {[c.department, c.unit, c.concern].filter(Boolean).join(' › ')} · Submitted {fmtDateTime(c.submitted_at)}
         </p>
-        {c.status && (
+        {c.status && !c.is_confidential && (
           <span className="inline-block mt-2 text-xs font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-700">
             {STATUSES[c.status]?.label || c.status}
           </span>
+        )}
+
+        {c.is_confidential && c.type === 'complaint' && (
+          <div className="mt-3 bg-nublue-50 border border-nublue-100 rounded-2xl p-4">
+            <p className="text-xs font-bold text-nublue-800 flex items-center gap-1.5"><ShieldCheck size={13} /> Confidential case — your office updates the status</p>
+            <p className="text-xs text-nublue-800/80 mt-1">The Council can't see this case's details, so please keep the status current yourselves.</p>
+            <div className="flex items-center gap-2 mt-2">
+              <select value={c.status} disabled={statusBusy} onChange={(e) => updateStatus(e.target.value)}
+                className={`${input} w-auto`}>
+                {['under_review', 'in_progress', 'resolved', 'closed'].map((k) => <option key={k} value={k}>{STATUSES[k]?.label || k}</option>)}
+              </select>
+              {statusBusy && <Loader2 size={14} className="animate-spin text-nublue-600" />}
+            </div>
+            {statusErr && <p className="text-xs text-red-600 mt-1">{statusErr}</p>}
+          </div>
         )}
 
         {c.redirect_requested_label && (

@@ -193,6 +193,28 @@ ticket for easy copy-paste.
 - **Set them** — staff app → **Offices & Concerns** → expand a unit → fill in the office email
   and/or unit head email → Save.
 
+## Confidential complaints
+
+Students filing a formal Complaint can check **"Mark as Confidential"**. When checked:
+
+- Non-admin Council staff still see the case in their list/dashboard (reference no., status,
+  priority, routing, dates) but the subject, description, identity, evidence, and timeline are
+  hidden — they can't open, edit, or comment on it.
+- Admins can still see and manage everything, exactly as before.
+- The **concerned office** (via its existing secure `/office/:ref` + 4-digit code link) continues
+  to see the full case as usual, and can now **update the status itself** from that page — normally
+  only Council staff can change status, but a confidential case has no staff handler who can see it
+  to do that.
+
+Non-confidential complaints and all feedback are unaffected.
+
+- **Run once** (after `migration_office_redirect_request.sql`): SQL Editor → paste
+  `migration_confidential_complaints.sql` → Run. Safe to re-run. It adds the `is_confidential`
+  column, a redacted `gc_staff_complaints` view (used by the staff Dashboard/Complaints/Detail
+  pages instead of the raw table), tightens RLS on `gc_complaints` / `gc_updates` /
+  `gc_attachments` / evidence storage so non-admin staff can't read a confidential case's content
+  directly, and adds the `gc_office_update_status` RPC for the office portal.
+
 ## Customizing
 
 - Categories: `src/lib/constants.js` **and** the `v_categories` array in `gc_submit_complaint()` / `gc_submit_feedback()` (keep in sync).

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { Search, EyeOff, Paperclip, AlertTriangle } from 'lucide-react'
+import { Search, EyeOff, Paperclip, AlertTriangle, Lock } from 'lucide-react'
 import Navbar from '../../components/Navbar.jsx'
 import { StatusBadge, PriorityBadge, TypeBadge } from '../../components/StatusBadge.jsx'
 import { supabase } from '../../supabaseClient'
@@ -31,8 +31,8 @@ export default function Complaints() {
   useEffect(() => {
     (async () => {
       const [{ data: c }, { data: s }] = await Promise.all([
-        supabase.from('gc_complaints')
-          .select('id, type, reference_no, subject, category, subcategory, office_department, office_unit, office_concern, office_unsure, flagged_language, status, priority, assigned_to, forwarded_to, is_anonymous, complainant_name, respondent, submitted_at, gc_attachments(id)')
+        supabase.from('gc_staff_complaints')
+          .select('id, type, reference_no, subject, is_confidential, category, subcategory, office_department, office_unit, office_concern, office_unsure, flagged_language, status, priority, assigned_to, forwarded_to, is_anonymous, complainant_name, respondent, submitted_at, attachment_count')
           .order('submitted_at', { ascending: false }).limit(2000),
         supabase.from('gc_staff').select('user_id, full_name'),
       ])
@@ -123,7 +123,12 @@ export default function Complaints() {
                     <div className="flex items-center gap-2 flex-wrap">
                       {r.status === 'received' && <span className="w-2 h-2 rounded-full bg-nublue-500" title="New" />}
                       <TypeBadge type={r.type} />
-                      <p className="font-semibold text-sm text-slate-800 truncate">{r.subject}</p>
+                      <p className="font-semibold text-sm text-slate-800 truncate">{r.subject || (r.is_confidential ? 'Confidential complaint' : '—')}</p>
+                      {r.is_confidential && (
+                        <span title="Confidential — full details are visible only to admins and the concerned office" className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-700 bg-slate-100 border border-slate-300 rounded-full px-1.5 py-0.5">
+                          <Lock size={10} /> Confidential
+                        </span>
+                      )}
                       {r.flagged_language && (
                         <span title="Strong language detected" className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-800 bg-amber-100 border border-amber-300 rounded-full px-1.5 py-0.5">
                           <AlertTriangle size={10} /> Language
@@ -140,12 +145,12 @@ export default function Complaints() {
                     </p>
                     <p className="text-[11px] text-slate-400 mt-1 flex items-center gap-3 flex-wrap">
                       <span className="flex items-center gap-1">
-                        {r.is_anonymous ? <><EyeOff size={11} /> Anonymous</> : <>From {r.complainant_name}</>}
+                        {r.is_anonymous ? <><EyeOff size={11} /> Anonymous</> : r.complainant_name ? <>From {r.complainant_name}</> : null}
                       </span>
                       {r.respondent && <span>Re: {r.respondent}</span>}
                       {r.forwarded_to && <span>→ {r.forwarded_to}</span>}
                       <span>{r.assigned_to ? `Assigned to ${staffMap[r.assigned_to] || 'staff'}` : 'Unassigned'}</span>
-                      {r.gc_attachments?.length > 0 && <span className="flex items-center gap-1"><Paperclip size={11} />{r.gc_attachments.length}</span>}
+                      {r.attachment_count > 0 && <span className="flex items-center gap-1"><Paperclip size={11} />{r.attachment_count}</span>}
                     </p>
                   </div>
                   <div className="flex flex-col items-end gap-1.5 shrink-0">

@@ -35,8 +35,8 @@ export default function Dashboard() {
   const [staffList, setStaffList] = useState([])
 
   useEffect(() => {
-    supabase.from('gc_complaints')
-      .select('id, type, reference_no, subject, category, office_department, office_unsure, status, priority, assigned_to, submitted_at, resolved_at, closed_at, satisfaction_rating')
+    supabase.from('gc_staff_complaints')
+      .select('id, type, reference_no, subject, is_confidential, category, office_department, office_unsure, status, priority, assigned_to, submitted_at, resolved_at, closed_at, satisfaction_rating')
       .order('submitted_at', { ascending: false })
       .limit(2000)
       .then(({ data }) => setRows(data || []))
@@ -153,7 +153,7 @@ export default function Dashboard() {
                 <li key={r.id}>
                   <Link to={`/staff/complaints/${r.id}`} className="flex items-center justify-between gap-3 py-3 hover:bg-slate-50 -mx-2 px-2 rounded-lg transition">
                     <div className="min-w-0">
-                      <p className="text-sm font-semibold text-slate-700 truncate">{r.subject}</p>
+                      <p className="text-sm font-semibold text-slate-700 truncate">{r.subject || (r.is_confidential ? 'Confidential complaint' : '—')}</p>
                       <p className="text-[11px] text-slate-400">{r.reference_no} · {deptOf(r)} · {fmtDate(r.submitted_at)}
                         {isOverdue(r) && <span className="text-red-500 font-semibold"> · {daysOpen(r)} days open</span>}
                         {r.priority === 'urgent' && <span className="text-red-500 font-semibold"> · Urgent</span>}
