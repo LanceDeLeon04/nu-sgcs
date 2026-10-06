@@ -1,8 +1,9 @@
 import React from 'react'
 import { NavLink, Link } from 'react-router-dom'
 import { useAuth } from '../lib/auth.jsx'
-import { LayoutGrid, Inbox, Users, Settings as SettingsIcon, LogOut, ShieldCheck, Globe, Building2 } from 'lucide-react'
+import { LayoutGrid, Inbox, Users, Settings as SettingsIcon, LogOut, ShieldCheck, Globe, Building2, BarChart3 } from 'lucide-react'
 import Brand from './Brand.jsx'
+import Avatar from './Avatar.jsx'
 
 const linkBase = 'flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors'
 const linkActive = 'bg-nublue-600 text-white shadow-glow'
@@ -11,7 +12,6 @@ const cls = ({ isActive }) => `${linkBase} ${isActive ? linkActive : linkIdle}`
 
 export default function StaffSidebar() {
   const { staff, isAdmin, signOut } = useAuth()
-  const initials = (staff?.full_name || '?').split(' ').map(n => n[0]).slice(0, 2).join('')
 
   return (
     <aside className="w-64 shrink-0 h-screen sticky top-0 bg-white border-r border-slate-100 flex flex-col">
@@ -25,15 +25,14 @@ export default function StaffSidebar() {
         <NavLink to="/staff/complaints" className={cls}><Inbox size={18} /> Complaints &amp; Feedback</NavLink>
         {isAdmin && <NavLink to="/staff/team" className={cls}><Users size={18} /> Manage Staff</NavLink>}
         {isAdmin && <NavLink to="/staff/offices" className={cls}><Building2 size={18} /> Offices &amp; Concerns</NavLink>}
+        {isAdmin && <NavLink to="/staff/reports" className={cls}><BarChart3 size={18} /> Weekly Reports</NavLink>}
         <NavLink to="/staff/settings" className={cls}><SettingsIcon size={18} /> Settings</NavLink>
         <Link to="/" className={`${linkBase} ${linkIdle}`}><Globe size={18} /> Public Site</Link>
       </nav>
 
       <div className="px-4 py-4 border-t border-slate-100">
         <div className="flex items-center gap-2 mb-3">
-          <div className="w-9 h-9 rounded-full bg-nublue-600 text-white flex items-center justify-center text-xs font-bold shrink-0">
-            {initials}
-          </div>
+          <Avatar path={staff?.avatar_path} name={staff?.full_name} size={36} />
           <div className="min-w-0">
             <p className="text-xs font-semibold text-slate-700 truncate">{staff?.full_name}</p>
             <p className="text-[11px] text-slate-400 truncate flex items-center gap-1">

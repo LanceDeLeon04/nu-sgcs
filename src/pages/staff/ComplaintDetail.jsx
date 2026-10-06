@@ -321,6 +321,11 @@ export default function ComplaintDetail() {
                         ) : (
                           <p className="mt-1 text-[11px] text-slate-500">Forwarding…</p>
                         )}
+                        {c.office_reminder_count > 0 && (
+                          <p className="mt-1 text-[11px] font-semibold text-amber-700">
+                            {c.office_reminder_count} reminder{c.office_reminder_count > 1 ? 's' : ''} sent to the office (last on {fmtDateTime(c.office_last_reminder_at)}) — no update since.
+                          </p>
+                        )}
                       </div>
                     ) : (
                       <div className="mt-2 max-w-md">

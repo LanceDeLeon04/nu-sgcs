@@ -137,20 +137,19 @@ export default function OfficeCase() {
         <p className="text-xs text-slate-500 mt-1">
           {[c.department, c.unit, c.concern].filter(Boolean).join(' › ')} · Submitted {fmtDateTime(c.submitted_at)}
         </p>
-        {c.status && !c.is_confidential && (
-          <span className="inline-block mt-2 text-xs font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-700">
-            {STATUSES[c.status]?.label || c.status}
-          </span>
-        )}
-
-        {c.is_confidential && c.type === 'complaint' && (
+        {c.status && (
           <div className="mt-3 bg-nublue-50 border border-nublue-100 rounded-2xl p-4">
-            <p className="text-xs font-bold text-nublue-800 flex items-center gap-1.5"><ShieldCheck size={13} /> Confidential case — your office updates the status</p>
-            <p className="text-xs text-nublue-800/80 mt-1">The Council can't see this case's details, so please keep the status current yourselves.</p>
+            <p className="text-xs font-bold text-nublue-800 flex items-center gap-1.5"><ShieldCheck size={13} /> Update status</p>
+            <p className="text-xs text-nublue-800/80 mt-1">
+              {c.is_confidential
+                ? "This case is confidential — the Council can't see its details, so please keep the status current yourselves."
+                : 'Let the Council know how this case is progressing on your end.'}
+            </p>
             <div className="flex items-center gap-2 mt-2">
               <select value={c.status} disabled={statusBusy} onChange={(e) => updateStatus(e.target.value)}
                 className={`${input} w-auto`}>
-                {['under_review', 'in_progress', 'resolved', 'closed'].map((k) => <option key={k} value={k}>{STATUSES[k]?.label || k}</option>)}
+                {(c.type === 'complaint' ? ['under_review', 'in_progress', 'resolved', 'closed'] : ['forwarded', 'noted'])
+                  .map((k) => <option key={k} value={k}>{STATUSES[k]?.label || k}</option>)}
               </select>
               {statusBusy && <Loader2 size={14} className="animate-spin text-nublue-600" />}
             </div>

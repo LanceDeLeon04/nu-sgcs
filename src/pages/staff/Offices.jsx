@@ -46,6 +46,52 @@ function UnitEmails({ unit, onSave, busy }) {
   )
 }
 
+function DirectorEmail({ dept, onSave, busy }) {
+  const [v, setV] = useState(dept.director_email || '')
+  useEffect(() => setV(dept.director_email || ''), [dept.director_email])
+  const t = v.trim()
+  const invalid = !t || !EMAIL_RE.test(t)
+  const dirty = t !== (dept.director_email || '')
+  return (
+    <div className="pb-3 border-b border-slate-200">
+      <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 flex items-center gap-1.5"><Mail size={11} /> Department director email <span className="text-red-500">*</span></p>
+      {!dept.director_email && (
+        <p className="text-[11px] text-red-700 bg-red-50 border border-red-200 rounded-lg px-2.5 py-1.5 mb-2 flex items-start gap-1.5">
+          <AlertTriangle size={12} className="shrink-0 mt-0.5" /> Required — every department must have a director email. The director gets one weekly summary of this department's concerns every Friday (not each concern).
+        </p>
+      )}
+      <div className="flex items-center gap-2">
+        <input value={v} onChange={(e) => setV(e.target.value)} type="email" required placeholder="director email, e.g. director@nu-laguna.edu.ph"
+          className={`${inp} flex-1 ${t && invalid ? 'border-red-300' : ''}`} />
+        {dirty && (
+          <button onClick={() => onSave(t)} disabled={busy || invalid}
+            className={`${btn} bg-nugold-500 hover:bg-nugold-400 text-nublue-900 disabled:opacity-50`}>
+            <Check size={13} /> Save
+          </button>
+        )}
+      </div>
+      {t && invalid && <p className="text-[10px] text-red-500 mt-0.5">Not a valid email.</p>}
+    </div>
+  )
+}
+
+function AddDepartment({ onAdd, busy }) {
+  const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
+  const n = name.trim(), e = email.trim()
+  const emailOk = EMAIL_RE.test(e)
+  const submit = (ev) => { ev.preventDefault(); if (!n || !emailOk) return; onAdd(n, e); setName(''); setEmail('') }
+  return (
+    <form onSubmit={submit} className="grid sm:grid-cols-[1fr_1fr_auto] gap-2 mt-2">
+      <input value={name} onChange={(ev) => setName(ev.target.value)} placeholder="New department (e.g. Administration/Executive)" maxLength={160} required className={inp} />
+      <input value={email} onChange={(ev) => setEmail(ev.target.value)} type="email" required placeholder="Director email (required)" className={`${inp} ${e && !emailOk ? 'border-red-300' : ''}`} />
+      <button type="submit" disabled={busy || !n || !emailOk} className={`${btn} bg-nublue-600 hover:bg-nublue-700 text-white disabled:opacity-50 justify-center`}>
+        <Plus size={13} /> Add
+      </button>
+    </form>
+  )
+}
+
 function AddRow({ placeholder, onAdd, busy }) {
   const [v, setV] = useState('')
   const submit = (e) => { e.preventDefault(); const t = v.trim(); if (!t) return; onAdd(t); setV('') }
@@ -113,9 +159,10 @@ export default function Offices() {
     setBusy(false)
   }
 
-  const addDept = (name) => guard(async () => {
+  const addDept = (name, director_email) => guard(async () => {
+    if (!EMAIL_RE.test((director_email || '').trim())) throw new Error('A director email is required for every department.')
     const sort_order = (depts?.length || 0) + 1
-    const { error } = await supabase.from('gc_departments').insert({ name, sort_order })
+    const { error } = await supabase.from('gc_departments').insert({ name, sort_order, director_email: director_email.trim() })
     if (error) throw error
     load()
   })
@@ -133,6 +180,7 @@ export default function Offices() {
   })
 
   const renameDept = (id, name) => guard(async () => { const { error } = await supabase.from('gc_departments').update({ name }).eq('id', id); if (error) throw error; load() })
+  const saveDirectorEmail = (id, director_email) => guard(async () => { const { error } = await supabase.from('gc_departments').update({ director_email }).eq('id', id); if (error) throw error; load() })
   const renameUnit = (id, name) => guard(async () => { const { error } = await supabase.from('gc_units').update({ name }).eq('id', id); if (error) throw error; load() })
   const saveUnitEmails = (id, patch) => guard(async () => { const { error } = await supabase.from('gc_units').update(patch).eq('id', id); if (error) throw error; load() })
   const renameConcern = (id, name) => guard(async () => { const { error } = await supabase.from('gc_concerns').update({ name }).eq('id', id); if (error) throw error; load() })
@@ -179,11 +227,17 @@ export default function Offices() {
                   <Building2 size={15} className="text-nublue-600 shrink-0" />
                   <EditableName name={d.name} isActive={d.is_active} busy={busy}
                     onSave={(v) => renameDept(d.id, v)} onDelete={() => delDept(d)} onToggleActive={() => toggleDept(d)} />
+                  {!d.director_email && (
+                    <span title="Director email required" className="inline-flex items-center gap-1 text-[10px] font-bold text-red-700 bg-red-50 border border-red-200 rounded-full px-1.5 py-0.5 shrink-0">
+                      <AlertTriangle size={10} /> Director email required
+                    </span>
+                  )}
                   <span className="text-[11px] text-slate-400 shrink-0">{deptUnits.length} unit{deptUnits.length !== 1 ? 's' : ''}</span>
                 </div>
 
                 {isOpen && (
                   <div className="border-t border-slate-100 px-4 py-3 bg-slate-50/60 space-y-3">
+                    <DirectorEmail dept={d} busy={busy} onSave={(v) => saveDirectorEmail(d.id, v)} />
                     {deptUnits.map((u) => {
                       const unitConcerns = concerns.filter((c) => c.unit_id === u.id)
                       const uOpen = openUnit === u.id
@@ -230,7 +284,7 @@ export default function Offices() {
 
         <div className="mt-5 bg-white rounded-2xl border border-slate-100 card-glow p-4">
           <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Add a department</p>
-          <AddRow placeholder="New department (e.g. Administration/Executive)" busy={busy} onAdd={addDept} />
+          <AddDepartment busy={busy} onAdd={addDept} />
         </div>
       </div>
     </div>

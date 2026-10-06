@@ -268,6 +268,70 @@ function buildMessage(type, p) {
     }
   }
 
+  if (type === 'office_reminder') {
+    const office = escapeHtml(p.unitName || 'your office')
+    return {
+      subject: `Reminder: update needed on ${p.referenceNo || 'a case'} (${office})`,
+      html: wrap({
+        eyebrow: 'Reminder', heading: "This case is still awaiting your office's update",
+        bodyHtml: `
+          <p style="margin:0 0 12px;">This is an automatic reminder — it's been at least 3 days since the last update on this case from your side.</p>
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 16px;">
+            <tr><td style="background:#f8fafc;border:1px solid #eef2f7;border-radius:10px;padding:14px 16px;">
+              <p style="margin:0 0 4px;color:#64748b;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;">${escapeHtml(p.referenceNo || '')}</p>
+              <p style="margin:0;color:#0f172a;font-size:14px;font-weight:700;">${escapeHtml(p.subject || '')}</p>
+            </td></tr>
+          </table>
+          <p style="margin:0 0 10px;">Please open the case and post an update, or change its status, using the secure link below.</p>
+          <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 16px;">
+            <tr><td style="background:${NUBLUE};border-radius:8px;">
+              <a href="${escapeHtml(p.officeUrl || '')}" style="display:inline-block;padding:10px 20px;color:#ffffff;font-size:13px;font-weight:700;text-decoration:none;">Open &amp; update this case &rarr;</a>
+            </td></tr>
+          </table>
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+            <tr><td style="background:#eef4ff;border:1px solid #d9e6ff;border-radius:12px;padding:16px 20px;">
+              <p style="margin:0 0 4px;color:${NUBLUE};font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;">Access code</p>
+              <p style="margin:0;color:${NUBLUE_DARK};font-size:22px;font-weight:800;font-family:Consolas,Menlo,monospace;letter-spacing:.08em;">${escapeHtml(p.code || '')}</p>
+            </td></tr>
+          </table>
+          <p style="margin:14px 0 0;color:#94a3b8;font-size:11.5px;">Reminder #${p.reminderCount || ''} — this will keep repeating every 3 days until the case is resolved.</p>`,
+      }),
+    }
+  }
+
+  if (type === 'director_digest') {
+    const dept = escapeHtml(p.departmentName || 'your department')
+    const items = Array.isArray(p.items) ? p.items : []
+    const counts = Array.isArray(p.statusCounts) ? p.statusCounts : []
+    const pills = counts.map((c) => `<span style="display:inline-block;margin:0 6px 6px 0;padding:3px 10px;border-radius:999px;background:#eef4ff;border:1px solid #d9e6ff;color:${NUBLUE_DARK};font-size:12px;font-weight:700;">${escapeHtml(c.label)}: ${Number(c.count) || 0}</span>`).join('')
+    const rows = items.map((i) => `
+            <tr>
+              <td style="padding:8px 0;border-top:1px solid #eef2f7;vertical-align:top;">
+                <p style="margin:0;color:#64748b;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;">${escapeHtml(i.referenceNo || '')} &middot; ${escapeHtml(i.typeLabel || '')} &middot; ${escapeHtml(i.statusLabel || '')}</p>
+                <p style="margin:2px 0 0;color:#0f172a;font-size:13.5px;font-weight:600;">${escapeHtml(i.subject || '')}</p>
+                ${i.office ? `<p style="margin:2px 0 0;color:#64748b;font-size:12px;">${escapeHtml(i.office)}</p>` : ''}
+              </td>
+            </tr>`).join('')
+    const more = p.moreCount > 0 ? `<p style="margin:10px 0 0;color:#64748b;font-size:12.5px;">&hellip;and ${Number(p.moreCount)} more not listed.</p>` : ''
+    const older = p.olderOpen > 0 ? `<p style="margin:14px 0 0;">Also still open from earlier weeks: <b>${Number(p.olderOpen)}</b> complaint${p.olderOpen === 1 ? '' : 's'}.</p>` : ''
+    const reportBtn = /^https?:\/\//.test(p.reportUrl || '') ? `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 16px;"><tr><td style="background:${NUBLUE};border-radius:10px;"><a href="${escapeHtml(p.reportUrl)}" style="display:inline-block;padding:11px 20px;color:#ffffff;font-size:13.5px;font-weight:700;text-decoration:none;">View the full weekly report (charts &amp; visualizations) &rarr;</a></td></tr></table>` : ''
+    return {
+      subject: `Weekly summary: ${p.total} concern${p.total === 1 ? '' : 's'} for ${p.departmentName || 'your department'} (${p.periodLabel || ''})`,
+      html: wrap({
+        eyebrow: 'Weekly summary', heading: `Concerns for ${p.departmentName || 'your department'}`,
+        bodyHtml: `
+          <p style="margin:0 0 12px;">Here is the Council of Leaders summary of concerns routed to <b>${dept}</b> for <b>${escapeHtml(p.periodLabel || 'this week')}</b>. Individual cases were sent to the responsible offices; this is an overview for your awareness.</p>
+          <p style="margin:0 0 8px;"><b>${Number(p.total) || 0}</b> new concern${p.total === 1 ? '' : 's'} this week</p>
+          <div style="margin:0 0 12px;">${pills}</div>
+          ${reportBtn}
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${rows}</table>
+          ${more}${older}
+          ${p.reportUrl ? `<p style="margin:14px 0 0;color:#64748b;font-size:12px;">Button not working? Open this link: <a href="${escapeHtml(p.reportUrl)}" style="color:${NUBLUE};">${escapeHtml(p.reportUrl)}</a></p>` : ''}
+          <p style="margin:16px 0 0;color:#94a3b8;font-size:11.5px;">Confidential cases are listed without their details, and reporter identities are never included in this summary.</p>`,
+      }),
+    }
+  }
+
   return null
 }
 

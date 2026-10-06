@@ -11,12 +11,14 @@ import Landing from './pages/Landing.jsx'
 import Submit from './pages/Submit.jsx'
 import TrackComplaint from './pages/TrackComplaint.jsx'
 import OfficeCase from './pages/OfficeCase.jsx'
+import WeeklyReport from './pages/WeeklyReport.jsx'
 import StaffLogin from './pages/staff/StaffLogin.jsx'
 import Dashboard from './pages/staff/Dashboard.jsx'
 import Complaints from './pages/staff/Complaints.jsx'
 import ComplaintDetail from './pages/staff/ComplaintDetail.jsx'
 import Team from './pages/staff/Team.jsx'
 import Offices from './pages/staff/Offices.jsx'
+import WeeklyReports from './pages/staff/WeeklyReports.jsx'
 import Settings from './pages/staff/Settings.jsx'
 
 function LoadingScreen() {
@@ -101,6 +103,7 @@ export default function App() {
       <Route path="/submit/:type?" element={<Submit />} />
       <Route path="/track/:code?" element={<TrackComplaint />} />
       <Route path="/office/:ref" element={<OfficeCase />} />
+      <Route path="/report/:token" element={<WeeklyReport />} />
 
       {/* Staff */}
       <Route path="/staff/login"
@@ -110,6 +113,7 @@ export default function App() {
       <Route path="/staff/complaints/:id" element={<StaffLayout><ComplaintDetail /></StaffLayout>} />
       <Route path="/staff/team" element={<StaffLayout adminOnly><Team /></StaffLayout>} />
       <Route path="/staff/offices" element={<StaffLayout adminOnly><Offices /></StaffLayout>} />
+      <Route path="/staff/reports" element={<StaffLayout adminOnly><WeeklyReports /></StaffLayout>} />
       <Route path="/staff/settings" element={<StaffLayout><Settings /></StaffLayout>} />
 
       <Route path="*" element={<Navigate to="/" replace />} />

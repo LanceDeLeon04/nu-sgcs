@@ -19,6 +19,24 @@ storage bucket, `gc-evidence`. It never reads or changes any SCS table.
 Both live in the same `gc_complaints` table (`type` = `feedback` | `complaint`); rules are enforced in the database,
 not just the UI (anonymous complaints are rejected server-side; a complaint can't take a feedback status and vice versa).
 
+## Office self-service + automatic follow-ups
+
+Once a case is forwarded, the concerned office's secure link (`/office/:ref`, 4-digit code) lets it both post
+updates **and change the status itself** (complaints: Under Review / In Progress / Resolved / Closed; feedback:
+Forwarded / Noted) — the Council no longer has to relay status changes on the office's behalf.
+
+A daily scheduled job (`api/cron-followups.js`, run by Vercel Cron — see `vercel.json`) then keeps things moving
+without anyone watching the queue:
+- **Reminders** — if a forwarded case sees no office activity (no update posted, no status change) for 3 days,
+  the office gets an emailed reminder with its secure link. This repeats every 3 days until the case reaches a
+  terminal status (resolved/closed/dismissed for complaints, noted for feedback).
+- **Auto-close** — a complaint left at "Resolved" for 3 days with no follow-up from the complainant is
+  automatically moved to "Closed" (a follow-up reopens it to "Under Review" immediately, so this only fires
+  when nobody responded).
+
+Needs `SUPABASE_SERVICE_ROLE_KEY` and `CRON_SECRET` set in Vercel's Environment Variables in addition to the
+`BREVO_*` vars — see `.env.example` for details.
+
 ## What it does
 
 **Public (no account):**
@@ -53,8 +71,10 @@ before this version are left untouched).
    Restart `npm run dev` after editing `.env`. On Vercel/Netlify add the same two variables under
    Environment Variables and redeploy. (Without them the app shows a "Supabase isn't connected" screen.)
 3. **Database** — SQL Editor → paste all of `schema.sql` → Run. This creates every table, function, trigger,
-   RLS policy and the `gc-evidence` storage bucket. Nothing else needs deploying — there are no Edge Functions.
-   Safe to re-run; it only touches `gc_*` objects.
+   RLS policy and the `gc-evidence` storage bucket. Then run the migration files in order (each file's own
+   header states the exact order); the most recent is `migration_office_reminders.sql`. Nothing needs deploying
+   as Edge Functions — the scheduled job runs as a Vercel Cron hitting a normal serverless route (`api/cron-followups.js`).
+   Safe to re-run any of these; they only touch `gc_*` objects.
 4. **First admin** — `schema.sql` already creates a built-in admin: username **`ADMIN_COL`**, password **`COL2026-2027`**
    (a real Supabase Auth account, stored hashed; change the password in Settings after first sign-in).
    To create additional admins, pick one:
@@ -193,6 +213,37 @@ ticket for easy copy-paste.
 - **Set them** — staff app → **Offices & Concerns** → expand a unit → fill in the office email
   and/or unit head email → Save.
 
+### Department director email (required)
+
+Every department **must** have a director email.
+
+- **Run once** (after `migration_office_forward_full_details.sql`): SQL Editor → paste
+  `migration_department_director_email.sql` → Run. It backfills from an existing unit head email
+  where one exists; any department still blank shows a red **Director email required** badge.
+- **Set it** — staff app → **Offices & Concerns** → expand a department → *Department director
+  email* → Save. New departments can't be added without one, and the database rejects saving a
+  department with a blank/invalid director email.
+- **Weekly summary, not per-case** — the director is *not* copied on individual concerns. Every
+  **Friday 5:00 PM (PH)** (`/api/cron-weekly-digest`, schedule in `vercel.json`, UTC) each director
+  gets one summary email of that department's concerns from the past 7 days: counts by status, a
+  list (reference no., type, status, subject, unit › concern), and how many older complaints are
+  still open. Departments with no new concerns that week get nothing. Confidential cases are listed
+  without details and reporter identities are never included. A `gc_digest_log` row prevents a
+  retried cron from sending the same week twice.
+- **Report link with charts** — every summary email has a **"View the full weekly report"** button
+  (plus a plain-text fallback link) to `/report/<token>`: KPIs, an 8-week volume trend, status
+  donut, open-by-priority, concerns-by-unit and the case list. The link is signed (HMAC, no login,
+  no DB table), valid 60 days, and shows no reporter identities; confidential cases have no details.
+  Signing key: `REPORT_LINK_SECRET` (falls back to `CRON_SECRET`). Rotating it invalidates old links.
+- **Send any range, any time (admins)** — staff app → **Weekly Reports**: pick a start/end date (or a
+  preset such as *Last Mon–Sun week*), choose departments, then **Preview** (sends nothing, gives
+  each department's report link) or **Send now**. It uses the same email + chart report as the Friday
+  send, but is **not** logged in `gc_digest_log`, so the automatic Friday 5 PM send always still goes
+  out. Ranges are PH dates, inclusive, up to 366 days; the end is capped at "now". The server
+  (`/api/send-weekly-report`) re-checks that the caller is an active **admin**.
+- **Preview without sending:** open `/api/cron-weekly-digest?dry=1` (with the `CRON_SECRET` bearer
+  header if set) to see which directors would be emailed.
+
 ## Confidential complaints
 
 Students filing a formal Complaint can check **"Mark as Confidential"**. When checked:
@@ -224,6 +275,18 @@ calling the RPC directly.
 
 - **Run once** (after `migration_confidential_complaints.sql`): SQL Editor → paste
   `migration_evidence_required.sql` → Run. Safe to re-run.
+
+## Staff profile pictures
+
+Every staff member can upload, change, or remove their own profile picture under **Settings**. The
+image is center-cropped to a square and shrunk to 256 px in the browser before upload, stored in a
+private `gc-avatars` bucket (one folder per user), and shown to signed-in staff in the sidebar,
+Settings, and Manage Staff via short-lived signed URLs. It is never shown on the public site.
+
+- **Run once** (after `migration_evidence_required.sql`): SQL Editor -> paste
+  `migration_staff_avatars.sql` -> Run. Safe to re-run. It adds `gc_staff.avatar_path`, creates the
+  bucket with per-user write policies, and adds the `gc_set_my_avatar` RPC (non-admins can't update
+  `gc_staff` directly).
 
 ## Customizing
 

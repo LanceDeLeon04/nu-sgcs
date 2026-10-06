@@ -3,6 +3,7 @@ import { UserPlus, ShieldCheck, Loader2, Wand2, Eye, EyeOff, Copy, Check, KeyRou
 import Navbar from '../../components/Navbar.jsx'
 import { supabase } from '../../supabaseClient'
 import { useAuth } from '../../lib/auth.jsx'
+import Avatar from '../../components/Avatar.jsx'
 
 const inp = 'w-full border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-nublue-500 bg-white'
 const lbl = 'text-xs font-semibold text-slate-500 uppercase tracking-wide'
@@ -86,11 +87,14 @@ export default function Team() {
               return (
                 <li key={r.user_id} className={`py-3 ${r.is_active ? '' : 'opacity-50'}`}>
                   <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex items-center gap-3">
+                      <Avatar path={r.avatar_path} name={r.full_name} size={36} />
+                      <div className="min-w-0">
                       <p className="text-sm font-semibold text-slate-800 flex items-center gap-1.5">
                         {r.role === 'admin' && <ShieldCheck size={14} className="text-nugold-500" />}{r.full_name}{me && <span className="text-[10px] text-slate-400 font-medium">(you)</span>}
                       </p>
                       <p className="text-xs text-slate-400 truncate">{shownLogin} {r.position ? `· ${r.position}` : ''}</p>
+                      </div>
                     </div>
                     <div className="flex items-center gap-2">
                       <select disabled={me} value={r.role} onChange={(e) => update(r.user_id, { role: e.target.value })}
