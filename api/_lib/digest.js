@@ -16,8 +16,15 @@ export const fmtShort = (ms, withYear = false) =>
   new Date(ms + PH_OFFSET_MS).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', ...(withYear ? { year: 'numeric' } : {}), timeZone: 'UTC' })
 
 export function getOrigin(req) {
+  // 1) explicit public URL  2) the host the request actually came in on (the site the admin is using,
+  // same as the office/tracking emails, which use the browser's own origin)  3) Vercel's production alias.
+  // VERCEL_URL (the per-deployment address) is last: it sits behind Vercel's login wall, which is why
+  // report links used to bounce to Vercel.
   if (process.env.PUBLIC_APP_URL) return process.env.PUBLIC_APP_URL.replace(/\/+$/, '')
-  return process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : `https://${req.headers.host}`
+  const host = (req?.headers?.['x-forwarded-host'] || req?.headers?.host || '').split(',')[0].trim()
+  if (host) return `https://${host}`
+  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+  return process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : ''
 }
 
 // opts: { supabase, origin, fromMs, toMs, periodLabel, departmentIds?, dry?, manual?, weekStart? }

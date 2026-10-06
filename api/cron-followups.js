@@ -22,6 +22,7 @@
 //   SUPABASE_SERVICE_ROLE_KEY  - server-only, bypasses RLS (see .env.example)
 
 import { createClient } from '@supabase/supabase-js'
+import { getOrigin } from './_lib/digest.js'
 
 const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000
 
@@ -57,7 +58,7 @@ export default async function handler(req, res) {
   }
   const supabase = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } })
 
-  const origin = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : `https://${req.headers.host}`
+  const origin = getOrigin(req)
   const sendEmail = async (payload) => {
     try {
       const r = await fetch(`${origin}/api/send-email`, {
