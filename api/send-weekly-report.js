@@ -24,9 +24,18 @@ export default async function handler(req, res) {
 
   // Authenticate the caller and require an active admin.
   const jwt = (req.headers.authorization || '').replace(/^Bearer\s+/i, '')
-  if (!jwt) return res.status(401).json({ error: 'Please sign in again.' })
+  if (!jwt || jwt === 'undefined') return res.status(401).json({ error: 'No sign-in token was sent. Sign out and sign in again.' })
   const { data: userData, error: uErr } = await supabase.auth.getUser(jwt)
-  if (uErr || !userData?.user) return res.status(401).json({ error: 'Please sign in again.' })
+  if (uErr || !userData?.user) {
+    // "Invalid API key" => SUPABASE_SERVICE_ROLE_KEY on the server is wrong or from another project.
+    const apiKeyProblem = /api key|apikey/i.test(uErr?.message || '')
+    console.error('send-weekly-report auth error:', uErr?.message)
+    return res.status(apiKeyProblem ? 500 : 401).json({
+      error: apiKeyProblem
+        ? 'Server key problem: SUPABASE_SERVICE_ROLE_KEY is invalid or belongs to a different project than VITE_SUPABASE_URL.'
+        : 'Your session expired or does not match this server\'s Supabase project. Sign out and sign in again.',
+    })
+  }
   const { data: staff } = await supabase.from('gc_staff').select('role, is_active').eq('user_id', userData.user.id).maybeSingle()
   if (!staff?.is_active || staff.role !== 'admin') return res.status(403).json({ error: 'Only admins can send weekly reports.' })
 

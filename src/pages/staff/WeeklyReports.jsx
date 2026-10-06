@@ -39,9 +39,12 @@ export default function WeeklyReports() {
     if (!dry && !window.confirm(`Email the report for ${from} to ${to} to ${selected.length} department director${selected.length === 1 ? '' : 's'} now?\n\n(Departments with no concerns in that range are skipped.)`)) return
     setBusy(dry ? 'preview' : 'send'); setError(''); setResult(null)
     try {
+      // Fresh token (supabase refreshes it if it has expired) instead of the one captured at render time.
+      const { data: { session: live } } = await supabase.auth.getSession()
+      const token = live?.access_token || session?.access_token
       const r = await fetch('/api/send-weekly-report', {
         method: 'POST',
-        headers: { 'content-type': 'application/json', authorization: `Bearer ${session?.access_token}` },
+        headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
         body: JSON.stringify({ from, to, dry, departmentIds: picked ?? undefined }),
       })
       const j = await r.json().catch(() => ({}))

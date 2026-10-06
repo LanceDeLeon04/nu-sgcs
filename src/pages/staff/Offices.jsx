@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react'
-import { Plus, Trash2, Pencil, Check, X, ChevronDown, ChevronRight, Building2, Layers, ListChecks, EyeOff, Eye, Mail, AlertTriangle } from 'lucide-react'
+import { Plus, Trash2, Pencil, Check, X, ChevronDown, ChevronRight, Building2, Layers, ListChecks, EyeOff, Eye, Mail, AlertTriangle, Hash } from 'lucide-react'
 import Navbar from '../../components/Navbar.jsx'
 import { supabase } from '../../supabaseClient'
 
@@ -7,6 +7,34 @@ const inp = 'border border-slate-200 rounded-lg px-2.5 py-1.5 text-sm outline-no
 const btn = 'inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg transition'
 
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
+
+const CODE_RE = /^[A-Z0-9]{2,8}$/
+
+function UnitCode({ unit, onSave, busy }) {
+  const [v, setV] = useState(unit.code || '')
+  useEffect(() => setV(unit.code || ''), [unit.code])
+  const t = v.trim().toUpperCase()
+  const invalid = !CODE_RE.test(t) || t === 'UNR'
+  const dirty = t !== (unit.code || '')
+  return (
+    <div className="pl-4 pb-2.5 pt-1">
+      <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 flex items-center gap-1.5"><Hash size={11} /> Unit code</p>
+      <div className="flex items-center gap-2 flex-wrap">
+        <input value={v} onChange={(e) => setV(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8))} maxLength={8}
+          placeholder="e.g. ACCT" className={`${inp} w-28 font-mono uppercase ${t && invalid ? 'border-red-300' : ''}`} />
+        {dirty && (
+          <button onClick={() => onSave(t)} disabled={busy || invalid}
+            className={`${btn} bg-nugold-500 hover:bg-nugold-400 text-nublue-900 disabled:opacity-50`}>
+            <Check size={13} /> Save code
+          </button>
+        )}
+        <span className="text-[11px] text-slate-500">Complaints: <span className="font-mono">GC-{t || 'CODE'}-0001</span> · Feedback: <span className="font-mono">FB-{t || 'CODE'}-0001</span></span>
+      </div>
+      {t && invalid && <p className="text-[10px] text-red-500 mt-0.5">{t === 'UNR' ? 'UNR is reserved for unrouted cases.' : '2 to 8 letters or digits.'}</p>}
+      <p className="text-[10px] text-slate-400 mt-1">Changing the code only affects new cases. Existing case numbers stay as issued.</p>
+    </div>
+  )
+}
 
 function UnitEmails({ unit, onSave, busy }) {
   const [email, setEmail] = useState(unit.email || '')
@@ -183,6 +211,11 @@ export default function Offices() {
   const saveDirectorEmail = (id, director_email) => guard(async () => { const { error } = await supabase.from('gc_departments').update({ director_email }).eq('id', id); if (error) throw error; load() })
   const renameUnit = (id, name) => guard(async () => { const { error } = await supabase.from('gc_units').update({ name }).eq('id', id); if (error) throw error; load() })
   const saveUnitEmails = (id, patch) => guard(async () => { const { error } = await supabase.from('gc_units').update(patch).eq('id', id); if (error) throw error; load() })
+  const saveUnitCode = (id, code) => guard(async () => {
+    const { error } = await supabase.from('gc_units').update({ code }).eq('id', id)
+    if (error) throw new Error(/gc_units_code_uq|duplicate key/i.test(error.message) ? `The code ${code} is already used by another unit. Pick a different one.` : error.message)
+    load()
+  })
   const renameConcern = (id, name) => guard(async () => { const { error } = await supabase.from('gc_concerns').update({ name }).eq('id', id); if (error) throw error; load() })
 
   const toggleDept = (row) => guard(async () => { const { error } = await supabase.from('gc_departments').update({ is_active: !row.is_active }).eq('id', row.id); if (error) throw error; load() })
@@ -250,6 +283,7 @@ export default function Offices() {
                             <Layers size={13} className="text-nugold-600 shrink-0" />
                             <EditableName name={u.name} isActive={u.is_active} busy={busy}
                               onSave={(v) => renameUnit(u.id, v)} onDelete={() => delUnit(u)} onToggleActive={() => toggleUnit(u)} />
+                            {u.code && <span title="Unit code" className="font-mono text-[10px] font-bold text-nublue-700 bg-nublue-50 border border-nublue-100 rounded-full px-1.5 py-0.5 shrink-0">{u.code}</span>}
                             {!u.email && !u.head_email && (
                               <span title="No email on file" className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-1.5 py-0.5 shrink-0">
                                 <AlertTriangle size={10} /> No email
@@ -260,6 +294,7 @@ export default function Offices() {
 
                           {uOpen && (
                             <div className="border-t border-slate-100 px-3 py-2.5 space-y-1.5">
+                              <UnitCode unit={u} busy={busy} onSave={(code) => saveUnitCode(u.id, code)} />
                               <UnitEmails unit={u} busy={busy} onSave={(patch) => saveUnitEmails(u.id, patch)} />
                               {unitConcerns.map((c) => (
                                 <div key={c.id} className="flex items-center gap-2 pl-4">

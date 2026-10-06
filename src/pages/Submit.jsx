@@ -105,6 +105,7 @@ function SubmitForm({ type }) {
   const [agree, setAgree] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [caseNo, setCaseNo] = useState(null) // public case number, e.g. GC-ACCT-0001
   const [result, setResult] = useState(null) // tracking code (complaint) or reference (feedback)
   const [copied, setCopied] = useState(false)
 
@@ -191,6 +192,11 @@ function SubmitForm({ type }) {
       }
       if (rpcErr) throw new Error(rpcErr.message)
       setResult(data)
+      if (isComplaint) {
+        try { const { data: cn } = await supabase.rpc('gc_case_no_for_code', { p_code: data }); if (cn) setCaseNo(cn) } catch { /* optional */ }
+      } else {
+        setCaseNo(data)
+      }
       try { localStorage.removeItem(draftKey(type)) } catch { /* ignore */ }
       if (isComplaint && f.email) {
         notifyByEmail({
@@ -246,7 +252,14 @@ function SubmitForm({ type }) {
         <div className="bg-white rounded-2xl border border-slate-100 card-glow p-8 text-center">
           <div className="w-14 h-14 mx-auto rounded-full bg-emerald-50 flex items-center justify-center mb-4"><CheckCircle2 className="text-emerald-500" size={30} /></div>
           <h1 className="text-xl font-extrabold text-slate-800">Your complaint has been received</h1>
-          <p className="text-sm text-slate-500 mt-1">Save your tracking code. You'll need it to follow every action taken.</p>
+          {caseNo && (
+            <>
+              <p className="mt-4 text-xs text-slate-400">Case number</p>
+              <p className="font-mono text-xl font-extrabold text-nublue-700 tracking-wider">{caseNo}</p>
+              <p className="text-[11px] text-slate-400">Quote this number when you contact the Council or the office.</p>
+            </>
+          )}
+          <p className="text-sm text-slate-500 mt-4">Save your private tracking code. You'll need it to follow every action taken.</p>
           <div className="mt-6 inline-flex items-center gap-3 bg-nublue-50 border border-nublue-100 rounded-2xl px-6 py-4">
             <span className="font-mono text-2xl sm:text-3xl font-extrabold text-nublue-700 tracking-wider">{result}</span>
             <button onClick={copy} className="text-nublue-600 hover:text-nublue-800 p-2 rounded-lg hover:bg-white transition" title="Copy code">

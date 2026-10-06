@@ -295,3 +295,8 @@ Settings, and Manage Staff via short-lived signed URLs. It is never shown on the
 - "Overdue" threshold: `OVERDUE_DAYS` in `src/lib/constants.js`.
 - Branding files in `public/`: `COLLogo.png` (header, sidebar, login; transparent gold), `SCSLogo.png` (credit footer), `favicon.png`, `LogInBG.png`. Replace them using the same filenames.
 - Footer text lives in `src/components/Footer.jsx`.
+
+
+## Unit codes and case numbers
+
+Run `migration_unit_codes.sql` (after `migration_evidence_required.sql`). Every unit has an editable code (Offices & Concerns > open a unit > Unit code). New cases are numbered `GC-<UNIT>-0001` (complaints) and `FB-<UNIT>-0001` (feedback), e.g. `GC-ACCT-0001`. Unrouted cases use `UNR`. Old cases keep their old numbers. The private `GC-XXXX-XXXX-XXXX` tracking code is unchanged and is still what the public /track page uses.
