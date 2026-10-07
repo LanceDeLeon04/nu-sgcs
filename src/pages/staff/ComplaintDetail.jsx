@@ -5,6 +5,7 @@ import Navbar from '../../components/Navbar.jsx'
 import { StatusBadge, PriorityBadge, TypeBadge } from '../../components/StatusBadge.jsx'
 import { supabase, EVIDENCE_BUCKET } from '../../supabaseClient'
 import { useAuth } from '../../lib/auth.jsx'
+import { useConfirm } from '../../lib/confirm.jsx'
 import { STATUSES, COMPLAINT_STATUS_KEYS, FEEDBACK_STATUS_KEYS, PRIORITIES, officeLabel, isUnrouted, fmtDate, fmtDateTime, isOverdue, daysOpen } from '../../lib/constants.js'
 import OfficePicker from '../../components/OfficePicker.jsx'
 import { notifyByEmail } from '../../lib/email.js'
@@ -137,8 +138,9 @@ export default function ComplaintDetail() {
     load()
   }
 
+  const confirm = useConfirm()
   const remove = async () => {
-    if (!window.confirm(`Permanently delete ${c.reference_no}? This cannot be undone.`)) return
+    if (!(await confirm({ title: 'Delete this case?', tone: 'danger', confirmText: 'Delete permanently', message: `Permanently delete ${c.reference_no}? This cannot be undone.` }))) return
     const { error } = await supabase.from('gc_complaints').delete().eq('id', id)
     if (error) return setErr(error.message)
     navigate('/staff/complaints')

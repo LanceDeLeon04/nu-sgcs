@@ -3,6 +3,7 @@ import { Send, Eye, Loader2, CheckCircle2, AlertTriangle, ExternalLink, Calendar
 import Navbar from '../../components/Navbar.jsx'
 import { supabase } from '../../supabaseClient'
 import { useAuth } from '../../lib/auth.jsx'
+import { useConfirm } from '../../lib/confirm.jsx'
 
 const inp = 'border border-slate-200 rounded-lg px-2.5 py-1.5 text-sm outline-none focus:ring-2 focus:ring-nublue-500 bg-white'
 const ymd = (d) => d.toISOString().slice(0, 10)
@@ -35,8 +36,10 @@ export default function WeeklyReports() {
   const toggle = (id) => setPicked((cur) => { const base = cur ?? depts.map((d) => d.id); return base.includes(id) ? base.filter((x) => x !== id) : [...base, id] })
   const rangeBad = !from || !to || from > to
 
+  const confirm = useConfirm()
   const run = async (dry) => {
-    if (!dry && !window.confirm(`Email the report for ${from} to ${to} to ${selected.length} department director${selected.length === 1 ? '' : 's'} now?\n\n(Departments with no concerns in that range are skipped.)`)) return
+    if (!dry && !(await confirm({ title: 'Send director report?', tone: 'primary', confirmText: 'Send now',
+      message: `Email the report for ${from} to ${to} to ${selected.length} department director${selected.length === 1 ? '' : 's'} now?\n\nDepartments with no concerns in that range are skipped.` }))) return
     setBusy(dry ? 'preview' : 'send'); setError(''); setResult(null)
     try {
       // Fresh token (supabase refreshes it if it has expired) instead of the one captured at render time.

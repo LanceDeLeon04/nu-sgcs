@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react'
+import { useConfirm } from '../../lib/confirm.jsx'
 import { Plus, Trash2, Pencil, Check, X, ChevronDown, ChevronRight, Building2, Layers, ListChecks, EyeOff, Eye, Mail, AlertTriangle, Hash } from 'lucide-react'
 import Navbar from '../../components/Navbar.jsx'
 import { supabase } from '../../supabaseClient'
@@ -222,16 +223,17 @@ export default function Offices() {
   const toggleUnit = (row) => guard(async () => { const { error } = await supabase.from('gc_units').update({ is_active: !row.is_active }).eq('id', row.id); if (error) throw error; load() })
   const toggleConcern = (row) => guard(async () => { const { error } = await supabase.from('gc_concerns').update({ is_active: !row.is_active }).eq('id', row.id); if (error) throw error; load() })
 
-  const delDept = (row) => {
-    if (!window.confirm(`Delete "${row.name}" and every unit/concern under it? Existing submissions keep their office on record but the item won't be selectable anymore.`)) return
+  const confirm = useConfirm()
+  const delDept = async (row) => {
+    if (!(await confirm({ title: 'Delete department?', tone: 'danger', confirmText: 'Delete', message: `Delete "${row.name}" and every unit/concern under it? Existing submissions keep their office on record but the item won't be selectable anymore.` }))) return
     guard(async () => { const { error } = await supabase.from('gc_departments').delete().eq('id', row.id); if (error) throw error; load() })
   }
-  const delUnit = (row) => {
-    if (!window.confirm(`Delete "${row.name}" and its concerns?`)) return
+  const delUnit = async (row) => {
+    if (!(await confirm({ title: 'Delete unit?', tone: 'danger', confirmText: 'Delete', message: `Delete "${row.name}" and its concerns?` }))) return
     guard(async () => { const { error } = await supabase.from('gc_units').delete().eq('id', row.id); if (error) throw error; load() })
   }
-  const delConcern = (row) => {
-    if (!window.confirm(`Delete "${row.name}"?`)) return
+  const delConcern = async (row) => {
+    if (!(await confirm({ title: 'Delete concern?', tone: 'danger', confirmText: 'Delete', message: `Delete "${row.name}"?` }))) return
     guard(async () => { const { error } = await supabase.from('gc_concerns').delete().eq('id', row.id); if (error) throw error; load() })
   }
 
