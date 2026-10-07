@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react'
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react'
 import { supabase } from '../supabaseClient'
 
 const AuthContext = createContext(null)
@@ -11,7 +11,10 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true)
   const [staffReady, setStaffReady] = useState(true) // false while the gc_staff row is being fetched for a new session
 
+  const userIdRef = useRef(null) // who we have already loaded staff data for
+
   const loadStaff = async (userId) => {
+    userIdRef.current = userId || null
     if (!userId) { setStaff(null); setStaffReady(true); return }
     const { data } = await supabase.from('gc_staff').select('*').eq('user_id', userId).maybeSingle()
     setStaff(data || null)
@@ -25,13 +28,18 @@ export function AuthProvider({ children }) {
       setLoading(false)
     })
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session)
+      const uid = session?.user?.id || null
+      // The browser fires SIGNED_IN / TOKEN_REFRESHED every time you switch back to this tab.
+      // For the SAME user that must not blank the screen, or the page remounts and unsaved work is lost.
+      if (uid && uid === userIdRef.current) return
       // Defer: awaiting supabase calls directly inside this callback can deadlock the client.
-      if (session?.user) {
+      if (uid) {
         setStaffReady(false)
-        setTimeout(() => loadStaff(session.user.id), 0)
+        setTimeout(() => loadStaff(uid), 0)
       } else {
+        userIdRef.current = null
         setStaff(null)
         setStaffReady(true)
       }
