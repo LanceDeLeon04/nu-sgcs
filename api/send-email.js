@@ -46,7 +46,7 @@ function wrap({ eyebrow, heading, bodyHtml, code, trackUrl }) {
   <body style="margin:0;padding:0;background:#eef2f7;font-family:Segoe UI,Arial,Helvetica,sans-serif;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eef2f7;padding:32px 16px;">
       <tr><td align="center">
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 16px rgba(0,40,125,0.08);">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;table-layout:fixed;word-break:break-word;overflow-wrap:anywhere;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 16px rgba(0,40,125,0.08);">
 
           <!-- Header -->
           <tr>
@@ -326,7 +326,7 @@ function buildMessage(type, p) {
           ${reportBtn}
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${rows}</table>
           ${more}${older}
-          ${p.reportUrl ? `<p style="margin:14px 0 0;color:#64748b;font-size:12px;">Button not working? Open this link: <a href="${escapeHtml(p.reportUrl)}" style="color:${NUBLUE};">${escapeHtml(p.reportUrl)}</a></p>` : ''}
+          ${p.reportUrl ? `<p style="margin:14px 0 0;color:#64748b;font-size:12px;">Button not working? <a href="${escapeHtml(p.reportUrl)}" style="color:${NUBLUE};">Open the report in your browser</a>.</p>` : ''}
           <p style="margin:16px 0 0;color:#94a3b8;font-size:11.5px;">Confidential cases are listed without their details, and reporter identities are never included in this summary.</p>`,
       }),
     }
