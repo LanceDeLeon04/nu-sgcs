@@ -1,5 +1,5 @@
 -- =====================================================================
--- Council of Leaders Grievance System: migration
+-- NUplift: Campus Feedback and Action Portal: migration
 --   CONFIDENTIAL COMPLAINTS
 --
 --   • Students filing a formal Complaint can check "Mark as Confidential".

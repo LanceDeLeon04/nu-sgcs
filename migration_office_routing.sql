@@ -1,5 +1,5 @@
 -- =====================================================================
--- Council of Leaders Grievance System: migration
+-- NUplift: Campus Feedback and Action Portal: migration
 --   OFFICE ROUTING  (Department > Unit > Concern)
 --
 --   • Admin-managed directory: gc_departments > gc_units > gc_concerns

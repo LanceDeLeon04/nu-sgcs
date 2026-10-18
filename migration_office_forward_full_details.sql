@@ -1,5 +1,5 @@
 -- =====================================================================
--- Council of Leaders Grievance System: migration
+-- NUplift: Campus Feedback and Action Portal: migration
 --   OFFICE FORWARDING — FULL CASE DETAILS
 --
 --   Previously, the email sent to a department/unit only contained the

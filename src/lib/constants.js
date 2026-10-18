@@ -1,5 +1,6 @@
-export const APP_NAME = 'Council of Leaders'
-export const APP_SUBTITLE = 'Student Grievance and Complaints System'
+export const APP_NAME = 'NUplift'
+export const APP_SUBTITLE = 'Campus Feedback and Action Portal'
+export const COL_NAME = 'Council of Leaders'
 
 // Routing: Department > Unit > Concern lives in the database (gc_departments / gc_units / gc_concerns)
 // and is managed by admins in the staff app (Offices & Concerns). Nothing to edit here.

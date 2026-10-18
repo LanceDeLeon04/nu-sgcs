@@ -1,5 +1,5 @@
 -- =====================================================================
--- Council of Leaders Grievance System: migration
+-- NUplift: Campus Feedback and Action Portal: migration
 --   OFFICE-INITIATED REDIRECT REQUEST
 --
 --   Lets the office on the receiving end of a forward (the secure

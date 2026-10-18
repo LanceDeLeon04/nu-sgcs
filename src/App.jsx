@@ -41,7 +41,7 @@ function NoAccess() {
         <div className="w-12 h-12 mx-auto rounded-full bg-amber-50 flex items-center justify-center mb-4">
           <ShieldAlert className="text-amber-500" size={24} />
         </div>
-        <h1 className="font-bold text-slate-800 text-lg">No access to the Complaints System</h1>
+        <h1 className="font-bold text-slate-800 text-lg">No access to NUplift</h1>
         <p className="text-sm text-slate-500 mt-2">
           {session?.user?.email} is signed in, but this account hasn't been added to the complaints staff list
           (or has been deactivated). Ask a Council of Leaders admin to add you.

@@ -1,4 +1,4 @@
-# Council of Leaders — Student Grievance and Complaints System
+# NUplift: Campus Feedback and Action Portal
 
 An independent complaints system built on the SCS File Repository's stack and look
 (React + Vite + Tailwind + Supabase, NU Blue / NU Gold). It uses the **same Supabase project**
@@ -293,7 +293,7 @@ Settings, and Manage Staff via short-lived signed URLs. It is never shown on the
 - Categories: `src/lib/constants.js` **and** the `v_categories` array in `gc_submit_complaint()` / `gc_submit_feedback()` (keep in sync).
 - Notice wording shown to students: `FEEDBACK_NOTICE` and `COMPLAINT_NOTICE` in `src/lib/constants.js`.
 - "Overdue" threshold: `OVERDUE_DAYS` in `src/lib/constants.js`.
-- Branding files in `public/`: `COLLogo.png` (header, sidebar, login; transparent gold), `SCSLogo.png` (credit footer), `favicon.png`, `LogInBG.png`. Replace them using the same filenames.
+- Branding files in `public/`: `NUpliftLogo.png` (header, sidebar, landing, login), `COLLogo.png` (credit footer, beside the SCS logo), `SCSLogo.png` (credit footer), `favicon.png`, `LogInBG.png`. Replace them using the same filenames.
 - Footer text lives in `src/components/Footer.jsx`.
 
 

@@ -1,5 +1,5 @@
 -- =====================================================================
--- Council of Leaders Grievance System: migration
+-- NUplift: Campus Feedback and Action Portal: migration
 --   STAFF PROFILE PICTURES
 --
 --   Lets each staff member upload / replace / remove their own profile

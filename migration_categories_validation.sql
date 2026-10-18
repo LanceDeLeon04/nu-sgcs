@@ -1,5 +1,5 @@
 -- =====================================================================
--- Council of Leaders Grievance System: migration
+-- NUplift: Campus Feedback and Action Portal: migration
 --   1. 4 primary categories + sub-categories (complaints)
 --   2. Student ID format   20XX-XXXXXX or 20XX-XXXXXXX (6-7 digits)
 --   3. NU email only       @students.nu-laguna.edu.ph or @nu-laguna.edu.ph

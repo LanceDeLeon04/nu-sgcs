@@ -7,7 +7,7 @@
 // NOT prefixed with VITE_ so they stay server-only):
 //   BREVO_API_KEY      - from Brevo dashboard > SMTP & API > API Keys
 //   BREVO_SENDER_EMAIL - the "From" address (must be a Verified Sender in Brevo)
-//   BREVO_SENDER_NAME  - optional, defaults to "Council of Leaders"
+//   BREVO_SENDER_NAME  - optional, defaults to "NUplift"
 
 const BREVO_ENDPOINT = 'https://api.brevo.com/v3/smtp/email'
 
@@ -60,7 +60,7 @@ function wrap({ eyebrow, heading, bodyHtml, code, trackUrl }) {
                   </td>
                   <td valign="middle" style="padding-left:12px;">
                     <p style="margin:0;color:${NUGOLD};font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;">${escapeHtml(eyebrow)}</p>
-                    <p style="margin:2px 0 0;color:#ffffff;font-size:17px;font-weight:800;">Council of Leaders</p>
+                    <p style="margin:2px 0 0;color:#ffffff;font-size:17px;font-weight:800;">NUplift</p>
                   </td>
                 </tr>
               </table>
@@ -100,7 +100,7 @@ function wrap({ eyebrow, heading, bodyHtml, code, trackUrl }) {
           <tr>
             <td style="padding:20px 32px;background:#f8fafc;border-top:1px solid #eef2f7;">
               <p style="margin:0;color:#94a3b8;font-size:11px;line-height:1.6;">
-                This is an automated message from the Council of Leaders Student Grievance System. Please do not reply directly to this email.
+                This is an automated message from the NUplift: Campus Feedback and Action Portal. Please do not reply directly to this email.
               </p>
             </td>
           </tr>
@@ -370,7 +370,7 @@ export default async function handler(req, res) {
         'api-key': apiKey,
       },
       body: JSON.stringify({
-        sender: { email: senderEmail, name: process.env.BREVO_SENDER_NAME || 'Council of Leaders' },
+        sender: { email: senderEmail, name: process.env.BREVO_SENDER_NAME || 'NUplift' },
         to: [{ email: to, name: body.name || undefined }],
         subject: msg.subject,
         htmlContent: msg.html,

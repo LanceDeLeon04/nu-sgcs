@@ -1,5 +1,5 @@
 -- =====================================================================
--- Council of Leaders Grievance System: migration
+-- NUplift: Campus Feedback and Action Portal: migration
 --   UNIT CODES + CASE NUMBERS
 --
 --   • Every unit gets an EDITABLE short code (e.g. Accounting -> ACCT).

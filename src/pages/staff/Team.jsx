@@ -67,7 +67,7 @@ export default function Team() {
   }
 
   const copyCreds = async () => {
-    const text = `Council of Leaders – Student Grievance and Complaints System\nUsername: ${created.login}\nPassword: ${created.password}`
+    const text = `NUplift: Campus Feedback and Action Portal\nUsername: ${created.login}\nPassword: ${created.password}`
     try { await navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 1800) } catch { /* ignore */ }
   }
 

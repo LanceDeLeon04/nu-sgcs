@@ -1,5 +1,5 @@
 -- =========================================================
--- Council of Leaders — Student Grievance and Complaints System
+-- NUplift: Campus Feedback and Action Portal
 -- SCHEMA (safe to run on the SAME Supabase project as the
 -- SCS File Repository)
 --
@@ -364,7 +364,7 @@ grant execute on function public.gc_staff_name(uuid) to authenticated;
 
 -- ---------------------------------------------------------
 -- 5. PUBLIC RPCs (SECURITY DEFINER) — used by the anonymous site
---    Same pattern as the SCS grievance/feedback submission:
+--    Same pattern as the SCS feedback submission:
 --    validate everything in SQL, never expose the tables to anon.
 -- ---------------------------------------------------------
 

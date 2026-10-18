@@ -1,5 +1,5 @@
 -- =====================================================================
--- Council of Leaders Grievance System: migration
+-- NUplift: Campus Feedback and Action Portal: migration
 --   OFFICE AUTO-FORWARDING + secure office update link
 --
 --   • If the routed unit has an email on file, the concern is forwarded

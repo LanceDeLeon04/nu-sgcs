@@ -1,5 +1,5 @@
 -- =====================================================================
--- Council of Leaders Grievance System: migration
+-- NUplift: Campus Feedback and Action Portal: migration
 --   REQUIRED DIRECTOR EMAIL FOR EVERY DEPARTMENT
 --
 --   • gc_departments.director_email — every department must have one.

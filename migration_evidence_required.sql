@@ -1,5 +1,5 @@
 -- =====================================================================
--- Council of Leaders Grievance System: migration
+-- NUplift: Campus Feedback and Action Portal: migration
 --   EVIDENCE REQUIRED ON COMPLAINTS
 --
 --   Formal complaints must now include at least one evidence attachment

@@ -1,5 +1,5 @@
 -- =====================================================================
--- Council of Leaders Grievance System: migration
+-- NUplift: Campus Feedback and Action Portal: migration
 --   Make office updates reach the student (public timeline entry + email)
 --
 -- RUN ORDER: ... -> migration_office_forwarding.sql -> THIS FILE

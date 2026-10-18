@@ -4,7 +4,7 @@ import { FilePlus2, Search, LogIn, EyeOff, KeyRound, ShieldCheck, ClipboardCheck
 import Brand from '../components/Brand.jsx'
 import Footer from '../components/Footer.jsx'
 import ChatWidget from '../components/ChatWidget.jsx'
-import { APP_NAME, COMPLAINT_NOTICE } from '../lib/constants.js'
+import { COL_NAME, COMPLAINT_NOTICE } from '../lib/constants.js'
 import { FeedbackNoticeText } from '../components/NoticeText.jsx'
 
 const steps = [
@@ -53,7 +53,7 @@ export default function Landing() {
 
               <p className="relative text-sm text-white/75 leading-relaxed mb-6">
                 Share feedback with the Council, or file a formal complaint when you need an actual resolution.
-                Every submission is reviewed by the {APP_NAME}.
+                Every submission is reviewed by the {COL_NAME}.
               </p>
 
               <div className="relative flex flex-col sm:flex-row gap-3">

@@ -1,5 +1,5 @@
 -- =====================================================================
--- Council of Leaders Grievance System: migration
+-- NUplift: Campus Feedback and Action Portal: migration
 --   OFFICE STATUS ON ALL CASES + AUTO-REMINDERS + AUTO-CLOSE
 --
 --   1. Offices can now change the status of ANY case forwarded to them

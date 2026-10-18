@@ -1,5 +1,5 @@
 -- =====================================================================
--- Council of Leaders Grievance System: migration
+-- NUplift: Campus Feedback and Action Portal: migration
 --   Unit email + unit head email
 --
 --   • Each unit (e.g. "IT Services Office") can now have an office email
