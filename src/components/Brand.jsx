@@ -10,8 +10,8 @@ export default function Brand({ variant = 'row' }) {
   if (variant === 'hero') {
     return (
       <div className="min-w-0">
-        <img src="/NUpliftLogo.png" alt={APP_NAME} className="w-60 sm:w-80 max-w-full h-auto object-contain block drop-shadow-[0_6px_18px_rgba(0,0,0,0.35)]" />
-        <p className="text-sm sm:text-base font-bold text-nugold-300 tracking-tight leading-snug mt-1.5">{APP_SUBTITLE}</p>
+        <img src="/NUpliftLogo.png" alt={APP_NAME} className="w-64 sm:w-[26rem] max-w-full h-auto object-contain block drop-shadow-[0_6px_18px_rgba(0,0,0,0.35)]" />
+        <p className="text-sm sm:text-base font-bold text-nugold-300 tracking-tight leading-snug mt-0.5">{APP_SUBTITLE}</p>
       </div>
     )
   }
