@@ -4,13 +4,13 @@ import { APP_NAME, APP_SUBTITLE } from '../lib/constants.js'
 // NUplift logo + the system title.
 //   variant="row"   -> logo beside the title (page headers)
 //   variant="stack" -> logo above the title (sidebar)
-//   variant="hero"  -> larger version for the dark hero/login cards (uses the light-lettered logo
-//                      so it reads on dark backgrounds with no backing plate)
+//   variant="hero"  -> larger version for the dark hero/login cards (original-color logo; its built-in white outline
+//                      keeps it readable on dark backgrounds, no backing plate)
 export default function Brand({ variant = 'row' }) {
   if (variant === 'hero') {
     return (
       <div className="min-w-0">
-        <img src="/NUpliftLogoLight.png" alt={APP_NAME} className="w-60 sm:w-80 max-w-full h-auto object-contain block drop-shadow-[0_6px_18px_rgba(0,0,0,0.35)]" />
+        <img src="/NUpliftLogo.png" alt={APP_NAME} className="w-60 sm:w-80 max-w-full h-auto object-contain block drop-shadow-[0_6px_18px_rgba(0,0,0,0.35)]" />
         <p className="text-sm sm:text-base font-bold text-nugold-300 tracking-tight leading-snug mt-1.5">{APP_SUBTITLE}</p>
       </div>
     )
