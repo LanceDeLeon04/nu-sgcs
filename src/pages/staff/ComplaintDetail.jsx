@@ -9,6 +9,7 @@ import { useConfirm } from '../../lib/confirm.jsx'
 import { STATUSES, COMPLAINT_STATUS_KEYS, FEEDBACK_STATUS_KEYS, PRIORITIES, officeLabel, isUnrouted, fmtDate, fmtDateTime, isOverdue, daysOpen } from '../../lib/constants.js'
 import OfficePicker from '../../components/OfficePicker.jsx'
 import { notifyByEmail } from '../../lib/email.js'
+import ModeratedField from '../../components/ModeratedField.jsx'
 
 const sel = 'w-full border border-slate-300 rounded-xl px-3 py-2 text-sm text-slate-900 placeholder:text-slate-700 bg-white outline-none focus:ring-2 focus:ring-nublue-500'
 const lbl = 'text-xs font-bold text-slate-700 uppercase tracking-wide'
@@ -433,7 +434,7 @@ export default function ComplaintDetail() {
                   </button>
                 </div>
                 )}
-                <textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} className={`${sel} resize-y`}
+                <ModeratedField as="textarea" mode="warn" rows={3} value={note} onChange={(e) => setNote(e.target.value)} className={`${sel} resize-y`}
                   placeholder={kindNow === 'public_response' ? 'Visible to the complainant on their tracking page…' : 'Only council staff can see this…'} />
                 <button type="submit" disabled={posting || !note.trim()}
                   className="mt-2 bg-nublue-600 hover:bg-nublue-700 text-white font-semibold text-sm px-5 py-2 rounded-xl shadow-glow transition flex items-center gap-2 disabled:opacity-50">
@@ -489,7 +490,7 @@ export default function ComplaintDetail() {
                   )}
                 </div></div>}
               {!locked && !isFeedback && <div><p className={`${lbl} mb-1`}>Outcome / resolution summary</p>
-                <textarea rows={4} value={summary} onChange={(e) => setSummary(e.target.value)} className={`${sel} resize-y`}
+                <ModeratedField as="textarea" mode="warn" rows={4} value={summary} onChange={(e) => setSummary(e.target.value)} className={`${sel} resize-y`}
                   placeholder="Shown to the complainant once resolved, closed or dismissed." />
                 {summaryDirty && (
                   <button onClick={() => save({ resolution_summary: summary.trim() || null })} disabled={busy}

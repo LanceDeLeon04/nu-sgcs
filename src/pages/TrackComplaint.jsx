@@ -5,6 +5,7 @@ import PublicShell from '../components/PublicShell.jsx'
 import { StatusBadge } from '../components/StatusBadge.jsx'
 import { supabase } from '../supabaseClient'
 import { STATUSES, fmtDate, fmtDateTime } from '../lib/constants.js'
+import ModeratedField from '../components/ModeratedField.jsx'
 
 const STEPS = ['Received', 'Under Review', 'In Progress', 'Resolved', 'Closed']
 
@@ -172,7 +173,7 @@ export default function TrackComplaint() {
             <form onSubmit={sendFollowup} className="bg-white rounded-2xl border border-slate-100 card-glow p-5 sm:p-6">
               <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-1"><MessageSquare size={16} className="text-nublue-600" /> Send a message to the Council</h3>
               <p className="text-xs text-slate-400 mb-3">Add details or reply to a question. {data.status === 'resolved' && 'Sending a message will reopen this complaint for review.'}</p>
-              <textarea rows={3} className={`${input} resize-y`} value={msg} onChange={(e) => setMsg(e.target.value)} maxLength={2000} required minLength={3} />
+              <ModeratedField as="textarea" mode="warn" rows={3} className={`${input} resize-y`} value={msg} onChange={(e) => setMsg(e.target.value)} maxLength={2000} required minLength={3} />
               <button type="submit" disabled={sending || msg.trim().length < 3}
                 className="mt-3 bg-nublue-600 hover:bg-nublue-700 text-white font-semibold text-sm px-5 py-2.5 rounded-xl shadow-glow transition flex items-center gap-2 disabled:opacity-60">
                 {sending ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />} Send
@@ -191,7 +192,7 @@ export default function TrackComplaint() {
                   </button>
                 ))}
               </div>
-              <textarea rows={2} className={`${input} resize-y`} placeholder="Comments (optional)" value={comment} onChange={(e) => setComment(e.target.value)} maxLength={1000} />
+              <ModeratedField as="textarea" mode="warn" rows={2} className={`${input} resize-y`} placeholder="Comments (optional)" value={comment} onChange={(e) => setComment(e.target.value)} maxLength={1000} />
               <button type="submit" disabled={!rating}
                 className="mt-3 bg-nugold-500 hover:bg-nugold-400 text-nublue-900 font-bold text-sm px-5 py-2.5 rounded-xl transition disabled:opacity-50">
                 Submit feedback

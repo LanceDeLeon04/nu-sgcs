@@ -16,15 +16,21 @@ const WORDS = [
   'shit', 'shits', 'shitty', 'bullshit', 'shet', 'bitch', 'bitches', 'bitchy', 'bastard', 'bastards',
   'asshole', 'assholes', 'dickhead', 'cunt', 'pussy', 'slut', 'whore', 'douche', 'douchebag',
   'nigger', 'nigga', 'faggot', 'retard', 'retarded',
+  // English (harsh / insulting)
+  'damn', 'dammit', 'goddamn', 'crap', 'cock', 'dumbass', 'jackass', 'idiot', 'idiots', 'moron', 'morons',
+  'stupid', 'scumbag', 'wtf', 'stfu',
   // Filipino / Tagalog
   'putangina', 'putanginamo', 'tangina', 'tanginamo', 'tanginang', 'puta', 'putang', 'pota', 'potah',
   'gago', 'gagu', 'tarantado', 'tarantada', 'ulol', 'bobo', 'tanga', 'siraulo', 'kupal',
   'punyeta', 'puneta', 'pucha', 'lintik', 'buwisit', 'bwisit', 'pakyu', 'pakshet', 'pakingshet',
   'hindot', 'kantot', 'kantutan', 'pekpek', 'burat', 'walanghiya', 'gunggong', 'engot',
+  'tangna', 'putangna', 'potangina', 'potanginamo', 'pukingina', 'pukinangina', 'amputa', 'amputangina',
+  'putragis', 'putcha', 'putsa', 'peste', 'pesteng', 'piste', 'pisti', 'leche', 'lecheng', 'shunga',
+  'inutil', 'ungas', 'hinayupak', 'hayup', 'demonyo', 'ogag', 'gaga', 'puki', 'titi', 'jakol', 'yawa',
 ]
 
 // Two-word spellings, matched by joining neighbouring words: "tang ina", "putang ina", "wala ng hiya"
-const JOINED = new Set(['tangina', 'putangina', 'tanginamo', 'putanginamo', 'walanghiya', 'pakyu', 'pakshet'])
+const JOINED_LIST = ['tangina', 'putangina', 'tanginamo', 'putanginamo', 'walanghiya', 'pakyu', 'pakshet', 'pakingshet', 'potangina', 'amputangina', 'bwisit', 'buwisit']
 
 const LEET = { '@': 'a', '4': 'a', '3': 'e', '1': 'i', '!': 'i', '|': 'i', '0': 'o', '$': 's', '5': 's', '7': 't', '+': 't', '8': 'b', '9': 'g', '¡': 'i' }
 // Common phonetic/visual swaps people use to dodge filters
@@ -64,28 +70,88 @@ function matchesBanned(t) {
   return null
 }
 
-/**
- * Returns the list of offensive words found (empty array = clean).
- * Words are returned in their normalized form; don't echo them back to other students.
- */
-export function findProfanity(text) {
-  if (!text) return []
-  const lower = collapseSpaced(stripAccents(String(text).toLowerCase()))
-  const tokens = lower.split(/[\s/\\,;:?"()\[\]{}<>=_~.\-]+/).filter(Boolean)
-  const cleaned = tokens.map((t) => normalizeToken(t))
-  const found = new Set()
+const JOINED = new Set(JOINED_LIST.map(squash))
 
-  cleaned.forEach((t, i) => {
-    const hit = matchesBanned(t)
-    if (hit) found.add(hit)
-    // two-word spellings: "tang ina", "putang ina"
-    if (i + 1 < cleaned.length && cleaned[i + 1]) {
-      const joined = t + cleaned[i + 1]
-      if (JOINED.has(squash(joined)) || JOINED.has(joined)) found.add(joined)
-    }
-  })
-  return [...found]
+// Near-miss spellings ("putangna", "tanginaa", "tarantadoo"): allow ONE typo, but only for long banned words
+// (8+ letters) so ordinary words such as "angina" are never caught.
+const FUZZY = [...squashedWords].filter((w) => w.length >= 8)
+function withinOneEdit(a, b) {
+  if (a === b) return true
+  if (Math.abs(a.length - b.length) > 1) return false
+  let i = 0
+  while (i < a.length && i < b.length && a[i] === b[i]) i++
+  if (a.length === b.length) return a.slice(i + 1) === b.slice(i + 1) // substitution
+  return a.length > b.length ? a.slice(i + 1) === b.slice(i) : a.slice(i) === b.slice(i + 1) // insert / delete
+}
+const fuzzyHit = (t) => {
+  const q = squash(t)
+  if (q.length < 8 || !/^[a-z]+$/.test(q)) return null
+  return FUZZY.find((w) => withinOneEdit(q, w)) || null
 }
 
-export const containsProfanity = (text) => findProfanity(text).length > 0
+const TOKEN_RE = /[^\s/\\,;:?"()[\]{}<>=_~.\-]+/g
+const norm = (raw) => normalizeToken(stripAccents(raw.toLowerCase()))
+
+/**
+ * Finds every offensive word with its position in the ORIGINAL text, so the UI can highlight it.
+ * Returns [{ start, end, word }] sorted by start (end exclusive). Catches:
+ *   plain words, repeated letters (fuuuck), leetspeak ($h1t), masks (f*ck), spaced/dotted letters (f u c k, f.u.c.k),
+ *   two/three-word spellings (tang ina, putang ina, wala ng hiya) and one-typo variants of long words.
+ */
+export function findProfanitySpans(text) {
+  if (!text) return []
+  const src = String(text)
+  const toks = []
+  let m
+  TOKEN_RE.lastIndex = 0
+  while ((m = TOKEN_RE.exec(src))) toks.push({ start: m.index, end: m.index + m[0].length, raw: m[0], n: norm(m[0]) })
+
+  const spans = []
+  const gap = (a, b) => src.slice(toks[a].end, toks[b].start)
+
+  toks.forEach((t, i) => {
+    const hit = matchesBanned(t.n) || fuzzyHit(t.n)
+    if (hit) spans.push({ start: t.start, end: t.start + t.raw.replace(/[!|+,;:?"')\]]+$/, '').length, word: hit })
+
+    // two- and three-word spellings, separated by spaces only: "tang ina", "wala ng hiya"
+    for (const len of [2, 3]) {
+      const j = i + len - 1
+      if (j >= toks.length) break
+      let ok = true
+      for (let k = i; k < j; k++) if (!/^\s+$/.test(gap(k, k + 1))) { ok = false; break }
+      if (!ok) continue
+      const joined = toks.slice(i, j + 1).map((x) => x.n).join('')
+      if (joined && (JOINED.has(squash(joined)) || squashedWords.has(squash(joined)) && len > 1)) {
+        spans.push({ start: t.start, end: toks[j].end, word: joined })
+      }
+    }
+
+    // letters split apart: "f u c k", "f.u.c.k", "p-u-t-a-n-g-i-n-a" (runs of single characters)
+    if (t.raw.length === 1) {
+      let j = i
+      while (j + 1 < toks.length && j - i < 13 && toks[j + 1].raw.length === 1 && /^[\s.\-_]+$/.test(gap(j, j + 1))) j++
+      for (let end = j; end >= i + 2; end--) {
+        const joined = toks.slice(i, end + 1).map((x) => x.n).join('')
+        const h = joined && (matchesBanned(joined) || (JOINED.has(squash(joined)) ? joined : null))
+        if (h) { spans.push({ start: t.start, end: toks[end].end, word: h }); break }
+      }
+    }
+  })
+
+  // merge overlaps (e.g. "putang ina" is caught as both "putang" and "putangina")
+  spans.sort((a, b) => a.start - b.start || b.end - a.end)
+  const out = []
+  for (const sp of spans) {
+    const last = out[out.length - 1]
+    if (last && sp.start < last.end) { if (sp.end > last.end) { last.end = sp.end; last.word = sp.word } } else out.push({ ...sp })
+  }
+  return out
+}
+
+/** Returns the list of offensive words found (empty array = clean). Don't echo them to OTHER students. */
+export function findProfanity(text) {
+  return [...new Set(findProfanitySpans(text).map((s) => s.word))]
+}
+
+export const containsProfanity = (text) => findProfanitySpans(text).length > 0
 export const hasProfanityIn = (...texts) => texts.some((t) => containsProfanity(t))

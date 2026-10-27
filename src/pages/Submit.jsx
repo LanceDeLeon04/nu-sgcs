@@ -14,6 +14,7 @@ import {
 import OfficePicker from '../components/OfficePicker.jsx'
 import { FeedbackNoticeText, Highlight } from '../components/NoticeText.jsx'
 import { hasProfanityIn } from '../lib/profanity.js'
+import ModeratedField from '../components/ModeratedField.jsx'
 import { notifyByEmail } from '../lib/email.js'
 
 const MAX_FILES = 3
@@ -413,30 +414,23 @@ function SubmitForm({ type }) {
             </div>
           )}
           <div><label className={label}>Subject <span className="text-red-500">*</span></label>
-            <input className={`${input} mt-1`} value={f.subject} onChange={set('subject')} maxLength={200} placeholder="A short title" /></div>
+            <ModeratedField mode={isComplaint ? 'warn' : 'block'} className={`${input} mt-1`} value={f.subject} onChange={set('subject')} maxLength={200} placeholder="A short title" /></div>
           <div><label className={label}>{isComplaint ? 'Description' : 'Your feedback'} <span className="text-red-500">*</span></label>
-            <textarea rows={6} className={`${input} mt-1 resize-y`} value={f.description} onChange={set('description')} maxLength={5000}
+            <ModeratedField as="textarea" mode={isComplaint ? 'warn' : 'block'} rows={6} className={`${input} mt-1 resize-y`} value={f.description} onChange={set('description')} maxLength={5000}
               placeholder={isComplaint ? 'What happened? When and where? Who was involved? Include as much detail as you can.' : 'Share your suggestion, compliment or concern.'} />
             <p className="text-[11px] text-slate-400 mt-1 text-right">{f.description.length}/5000</p>
-            {strongLanguage && (
-              <div className={`mt-2 text-xs rounded-lg px-3 py-2 flex items-start gap-2 ${isComplaint ? 'bg-amber-50 border border-amber-200 text-amber-800' : 'bg-red-50 border border-red-200 text-red-700'}`}>
-                <AlertTriangle size={14} className="shrink-0 mt-0.5" />
-                <span>{isComplaint
-                  ? 'We noticed strong language. You can still submit, but please keep it respectful. The Council will be notified so staff can review it with care.'
-                  : 'Your message contains language that is not allowed. Please rephrase it before sending.'}</span>
-              </div>
-            )}</div>
+</div>
           <div className={isComplaint ? 'grid sm:grid-cols-2 gap-4' : ''}>
             {isComplaint && (
               <div><label className={label}>Where did it happen?</label>
                 <input className={`${input} mt-1`} value={f.incident_location} onChange={set('incident_location')} maxLength={200} placeholder="Office, room, organization, online…" /></div>
             )}
             <div><label className={label}>{isComplaint ? 'Person / office concerned' : 'Office or person concerned (helps us forward it)'}</label>
-              <input className={`${input} mt-1`} value={f.respondent} onChange={set('respondent')} maxLength={200} placeholder={isComplaint ? 'Who is this complaint about?' : 'e.g. Registrar, Library, SCS Student Council'} /></div>
+              <ModeratedField mode={isComplaint ? 'warn' : 'block'} className={`${input} mt-1`} value={f.respondent} onChange={set('respondent')} maxLength={200} placeholder={isComplaint ? 'Who is this complaint about?' : 'e.g. Registrar, Library, SCS Student Council'} /></div>
           </div>
           {isComplaint && (
             <div><label className={label}>What outcome would you like?</label>
-              <textarea rows={2} className={`${input} mt-1 resize-y`} value={f.desired_outcome} onChange={set('desired_outcome')} maxLength={1000} placeholder="Optional" /></div>
+              <ModeratedField as="textarea" mode="warn" rows={2} className={`${input} mt-1 resize-y`} value={f.desired_outcome} onChange={set('desired_outcome')} maxLength={1000} placeholder="Optional" /></div>
           )}
         </section>
 
