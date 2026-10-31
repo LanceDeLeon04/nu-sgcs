@@ -1,8 +1,8 @@
 -- =====================================================================
 -- NUplift: Campus Feedback and Action Portal: migration
---   EVIDENCE REQUIRED ON COMPLAINTS
+--   EVIDENCE REQUIRED ON CONCERNS
 --
---   Formal complaints must now include at least one evidence attachment
+--   Formal concerns must now include at least one evidence attachment
 --   (1-3 files). Feedback is unaffected (still optional/no attachments).
 --   This is a server-side backstop for the UI, which already requires it.
 --
@@ -49,7 +49,7 @@ begin
     raise exception 'Description must be between 20 and 5000 characters.';
   end if;
   if v_anon then
-    raise exception 'Formal complaints require identification. To stay anonymous, submit Feedback instead.';
+    raise exception 'Formal concerns require identification. To stay anonymous, submit Feedback instead.';
   end if;
   if v_name is null then raise exception 'Please provide your full name.'; end if;
   if v_student !~ '^20[0-9]{2}-[0-9]{6,7}$' then
@@ -108,7 +108,7 @@ begin
 
   insert into public.gc_updates (complaint_id, author_type, author_name, kind, message, is_public)
   values (v_id, 'system', 'System', 'submitted',
-          'Complaint received with ' || v_att_count || ' attachment(s)'
+          'Concern received with ' || v_att_count || ' attachment(s)'
           || case when v_confidential then ' (marked confidential).'
                   when v_dname is not null then ' and sent to ' || v_dname || ' › ' || v_uname || '.'
                   else '. It will be routed to the right office by the Council.' end,

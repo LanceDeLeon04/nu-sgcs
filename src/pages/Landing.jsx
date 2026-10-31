@@ -4,7 +4,7 @@ import { FilePlus2, Search, LogIn, EyeOff, KeyRound, ShieldCheck, ClipboardCheck
 import Brand from '../components/Brand.jsx'
 import Footer from '../components/Footer.jsx'
 import ChatWidget from '../components/ChatWidget.jsx'
-import { COL_NAME, COMPLAINT_NOTICE } from '../lib/constants.js'
+import { COL_NAME, CONCERN_NOTICE } from '../lib/constants.js'
 import { FeedbackNoticeText } from '../components/NoticeText.jsx'
 
 const steps = [
@@ -52,14 +52,14 @@ export default function Landing() {
               </div>
 
               <p className="relative text-sm text-white/75 leading-relaxed mb-6">
-                Share feedback with the Council, or file a formal complaint when you need an actual resolution.
+                Share feedback with the Council, or file a formal concern when you need an actual resolution.
                 Every submission is reviewed by the {COL_NAME}.
               </p>
 
               <div className="relative flex flex-col sm:flex-row gap-3">
                 <Link to="/submit/complaint"
                   className="flex-1 bg-gradient-to-r from-nugold-400 to-nugold-500 hover:from-nugold-300 hover:to-nugold-400 text-nublue-900 font-bold py-2.5 rounded-xl transition shadow-[0_8px_20px_-6px_rgba(255,199,44,0.5)] flex items-center justify-center gap-2">
-                  <FileWarning size={17} /> File a Complaint
+                  <FileWarning size={17} /> File a Concern
                 </Link>
                 <Link to="/submit/feedback"
                   className="flex-1 bg-white/10 hover:bg-white/20 border border-white/30 text-white font-semibold py-2.5 rounded-xl transition flex items-center justify-center gap-2">
@@ -67,13 +67,13 @@ export default function Landing() {
                 </Link>
               </div>
               <Link to="/track" className="relative mt-3 flex items-center justify-center gap-2 text-sm font-semibold text-white/80 hover:text-white transition">
-                <Search size={15} /> Track a complaint with your code
+                <Search size={15} /> Track a concern with your code
               </Link>
 
               <div className="relative flex items-center gap-2 mt-5 bg-white/5 border border-white/15 rounded-xl px-3 py-2">
                 <EyeOff size={14} className="text-nugold-300 flex-shrink-0" />
                 <p className="text-[11px] text-white/65 leading-snug">
-                  Want to stay anonymous? Send Feedback. Formal complaints require identification.
+                  Want to stay anonymous? Send Feedback. Formal concerns require identification.
                 </p>
               </div>
             </div>
@@ -81,10 +81,10 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Feedback vs Complaint */}
+      {/* Feedback vs Concern */}
       <section className="max-w-6xl mx-auto px-4 sm:px-8 pt-12">
         <div className="text-center mb-8">
-          <h2 className="text-xl font-extrabold text-nublue-700 gold-underline inline-block">Feedback or Complaint?</h2>
+          <h2 className="text-xl font-extrabold text-nublue-700 gold-underline inline-block">Feedback or Concern?</h2>
         </div>
         <div className="grid md:grid-cols-2 gap-5">
           <div className="bg-white rounded-2xl border border-slate-100 card-glow p-6">
@@ -102,20 +102,20 @@ export default function Landing() {
             <div className="flex items-center gap-3 mb-3">
               <div className="w-10 h-10 rounded-xl bg-nublue-600 text-white flex items-center justify-center shadow-glow"><FileWarning size={20} /></div>
               <div>
-                <p className="font-extrabold text-slate-800">Formal Complaint</p>
+                <p className="font-extrabold text-slate-800">Formal Concern</p>
                 <p className="text-[11px] font-semibold text-nublue-600 flex items-center gap-1"><ShieldCheck size={11} /> Identification required · Trackable</p>
               </div>
             </div>
-            <p className="text-sm text-slate-600 leading-relaxed">{COMPLAINT_NOTICE}</p>
-            <Link to="/submit/complaint" className="inline-block mt-4 text-sm font-bold text-nublue-600 hover:text-nublue-800">File a complaint →</Link>
+            <p className="text-sm text-slate-600 leading-relaxed">{CONCERN_NOTICE}</p>
+            <Link to="/submit/complaint" className="inline-block mt-4 text-sm font-bold text-nublue-600 hover:text-nublue-800">File a concern →</Link>
           </div>
         </div>
       </section>
 
-      {/* How a complaint works */}
+      {/* How a concern works */}
       <section className="max-w-6xl mx-auto px-4 sm:px-8 py-12">
         <div className="text-center mb-8">
-          <h2 className="text-xl font-extrabold text-nublue-700 gold-underline inline-block">How a formal complaint works</h2>
+          <h2 className="text-xl font-extrabold text-nublue-700 gold-underline inline-block">How a formal concern works</h2>
         </div>
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {steps.map((s, i) => (
@@ -137,7 +137,7 @@ export default function Landing() {
           <div>
             <p className="font-bold text-slate-800 text-sm">Fair, confidential and good-faith</p>
             <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-              Complaints are visible only to authorized Council of Leaders staff. Please submit truthful information only.
+              Concerns are visible only to authorized Council of Leaders staff. Please submit truthful information only.
               For emergencies or threats to anyone's safety, contact campus security or local authorities immediately —
               this system is not monitored in real time.
             </p>

@@ -7,7 +7,7 @@ import {
 import PublicShell from '../components/PublicShell.jsx'
 import { supabase, EVIDENCE_BUCKET } from '../supabaseClient'
 import {
-  YEAR_LEVELS, COMPLAINT_NOTICE, FEEDBACK_TYPES,
+  YEAR_LEVELS, CONCERN_NOTICE, FEEDBACK_TYPES,
   formatStudentId, isValidStudentId, isValidNuEmail, STUDENT_ID_HINT, NU_EMAIL_DOMAIN, NU_EMAIL_HINT,
   DEPARTMENT_NAMES, programsOf,
 } from '../lib/constants.js'
@@ -26,7 +26,7 @@ const label = 'text-xs font-semibold text-slate-500 uppercase tracking-wide'
 const safeName = (n) => n.replace(/[^A-Za-z0-9._-]/g, '_').slice(-80)
 
 /* ------------------------------------------------------------------ */
-/* Step 0: choose Feedback or Complaint                                */
+/* Step 0: choose Feedback or Concern                                */
 /* ------------------------------------------------------------------ */
 export function TypeChooser() {
   return (
@@ -57,11 +57,11 @@ export function TypeChooser() {
 
         <div className="bg-white rounded-2xl border border-slate-100 card-glow p-6 flex flex-col">
           <div className="w-11 h-11 rounded-xl bg-nublue-600 text-white flex items-center justify-center mb-4 shadow-glow"><FileWarning size={22} /></div>
-          <h2 className="text-lg font-extrabold text-slate-800">Formal Complaint</h2>
+          <h2 className="text-lg font-extrabold text-slate-800">Formal Concern</h2>
           <span className="inline-flex items-center gap-1 self-start text-[11px] font-bold text-nublue-700 bg-nublue-50 border border-nublue-100 rounded-full px-2 py-0.5 mt-2">
             <ShieldCheck size={11} /> Identification required · Trackable
           </span>
-          <p className="text-sm text-slate-600 mt-4 leading-relaxed">{COMPLAINT_NOTICE}</p>
+          <p className="text-sm text-slate-600 mt-4 leading-relaxed">{CONCERN_NOTICE}</p>
           <ul className="text-xs text-slate-500 mt-4 space-y-1.5">
             <li>• Actual resolution and trackable actions</li>
             <li>• Your name, student ID and email are required</li>
@@ -69,7 +69,7 @@ export function TypeChooser() {
           </ul>
           <Link to="/submit/complaint"
             className="mt-6 inline-flex items-center justify-center gap-2 bg-gradient-to-r from-nublue-600 to-nublue-500 hover:from-nublue-700 hover:to-nublue-600 text-white font-bold text-sm py-2.5 rounded-xl shadow-glow transition">
-            File a Complaint <ArrowRight size={15} />
+            File a Concern <ArrowRight size={15} />
           </Link>
         </div>
       </div>
@@ -78,7 +78,7 @@ export function TypeChooser() {
 }
 
 /* ------------------------------------------------------------------ */
-/* The form (feedback or complaint)                                    */
+/* The form (feedback or concern)                                    */
 /* ------------------------------------------------------------------ */
 const blank = {
   is_anonymous: false, is_confidential: false, complainant_name: '', student_id: '', email: '', contact_no: '', department: '', program: '', year_level: '',
@@ -100,14 +100,14 @@ const loadDraft = (type) => {
 }
 
 function SubmitForm({ type }) {
-  const isComplaint = type === 'complaint'
+  const isConcern = type === 'complaint'
   const [f, setF] = useState(() => loadDraft(type) || blank)
   const [files, setFiles] = useState([])
   const [agree, setAgree] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [caseNo, setCaseNo] = useState(null) // public case number, e.g. GC-ACCT-0001
-  const [result, setResult] = useState(null) // tracking code (complaint) or reference (feedback)
+  const [result, setResult] = useState(null) // tracking code (concern) or reference (feedback)
   const [copied, setCopied] = useState(false)
 
   // Autosave every field change to localStorage so a refresh (or an accidental
@@ -121,10 +121,10 @@ function SubmitForm({ type }) {
   const setStudentId = (e) => setF((p) => ({ ...p, student_id: formatStudentId(e.target.value) }))
   const setOffice = (next) => setF((p) => ({ ...p, ...next }))
   const today = new Date().toISOString().slice(0, 10)
-  const anon = !isComplaint && f.is_anonymous
-  const minDesc = isComplaint ? 20 : 10
+  const anon = !isConcern && f.is_anonymous
+  const minDesc = isConcern ? 20 : 10
   const programs = programsOf(f.department)
-  // Feedback: strong language is blocked. Complaints: allowed (people may need to quote what was said) but flagged for staff.
+  // Feedback: strong language is blocked. Concerns: allowed (people may need to quote what was said) but flagged for staff.
   const strongLanguage = useMemo(
     () => hasProfanityIn(f.subject, f.description, f.respondent, f.desired_outcome),
     [f.subject, f.description, f.respondent, f.desired_outcome],
@@ -148,26 +148,26 @@ function SubmitForm({ type }) {
     e.preventDefault()
     setError('')
     if (f.website) return // bot
-    if (!isComplaint && !f.feedback_type) return setError('Please choose the type of feedback.')
+    if (!isConcern && !f.feedback_type) return setError('Please choose the type of feedback.')
     if (!f.concern_id && !f.office_unsure) return setError('Please choose a department, unit and concern (or select "I\'m not sure").')
     if (f.subject.trim().length < 5) return setError('Please enter a subject (at least 5 characters).')
     if (f.description.trim().length < minDesc) return setError(`Please write at least ${minDesc} characters in the description.`)
-    if (isComplaint && files.length === 0) return setError('Please attach at least one file as evidence.')
-    if (!anon && !f.complainant_name.trim()) return setError(isComplaint ? 'Please enter your full name.' : 'Please enter your name, or send the feedback anonymously.')
-    if (isComplaint) {
+    if (isConcern && files.length === 0) return setError('Please attach at least one file as evidence.')
+    if (!anon && !f.complainant_name.trim()) return setError(isConcern ? 'Please enter your full name.' : 'Please enter your name, or send the feedback anonymously.')
+    if (isConcern) {
       if (!isValidStudentId(f.student_id)) return setError(`Please enter your student ID in this format: ${STUDENT_ID_HINT}.`)
       if (!isValidNuEmail(f.email)) return setError(`Please use your NU email (${NU_EMAIL_HINT}).`)
     } else if (!anon) {
       if (f.student_id.trim() && !isValidStudentId(f.student_id)) return setError(`Student ID must follow this format: ${STUDENT_ID_HINT}.`)
       if (f.email.trim() && !isValidNuEmail(f.email)) return setError(`Please use your NU email (${NU_EMAIL_HINT}), or leave it blank.`)
     }
-    if (!isComplaint && strongLanguage) return setError('Your message contains language that is not allowed. Please rephrase it respectfully and try again.')
+    if (!isConcern && strongLanguage) return setError('Your message contains language that is not allowed. Please rephrase it respectfully and try again.')
     if (!agree) return setError('Please confirm the statement at the bottom of the form.')
 
     setBusy(true)
     try {
       let data, rpcErr
-      if (isComplaint) {
+      if (isConcern) {
         const sid = crypto.randomUUID()
         const attachments = []
         for (let i = 0; i < files.length; i++) {
@@ -193,13 +193,13 @@ function SubmitForm({ type }) {
       }
       if (rpcErr) throw new Error(rpcErr.message)
       setResult(data)
-      if (isComplaint) {
+      if (isConcern) {
         try { const { data: cn } = await supabase.rpc('gc_case_no_for_code', { p_code: data }); if (cn) setCaseNo(cn) } catch { /* optional */ }
       } else {
         setCaseNo(data)
       }
       try { localStorage.removeItem(draftKey(type)) } catch { /* ignore */ }
-      if (isComplaint && f.email) {
+      if (isConcern && f.email) {
         notifyByEmail({
           type: 'confirmation',
           to: f.email,
@@ -260,12 +260,12 @@ function SubmitForm({ type }) {
   }
 
   /* ---------- success screens ---------- */
-  if (result && isComplaint) {
+  if (result && isConcern) {
     return (
       <PublicShell>
         <div className="bg-white rounded-2xl border border-slate-100 card-glow p-8 text-center">
           <div className="w-14 h-14 mx-auto rounded-full bg-emerald-50 flex items-center justify-center mb-4"><CheckCircle2 className="text-emerald-500" size={30} /></div>
-          <h1 className="text-xl font-extrabold text-slate-800">Your complaint has been received</h1>
+          <h1 className="text-xl font-extrabold text-slate-800">Your concern has been received</h1>
           {caseNo && (
             <>
               <p className="mt-4 text-xs text-slate-400">Case number</p>
@@ -289,7 +289,7 @@ function SubmitForm({ type }) {
             <p className="text-xs text-amber-800 leading-relaxed">This code cannot be recovered. Screenshot it or write it down now.</p>
           </div>
           <div className="mt-7 flex flex-col sm:flex-row gap-3 justify-center">
-            <Link to={`/track/${result}`} className="bg-nublue-600 hover:bg-nublue-700 text-white font-semibold text-sm px-5 py-2.5 rounded-xl shadow-glow transition">Track this complaint</Link>
+            <Link to={`/track/${result}`} className="bg-nublue-600 hover:bg-nublue-700 text-white font-semibold text-sm px-5 py-2.5 rounded-xl shadow-glow transition">Track this concern</Link>
             <Link to="/" className="text-sm font-semibold text-slate-500 hover:text-nublue-700 px-5 py-2.5 rounded-xl hover:bg-nublue-50 transition">Back to home</Link>
           </div>
         </div>
@@ -308,7 +308,7 @@ function SubmitForm({ type }) {
           <p className="text-[11px] text-slate-400 mt-1">Feedback can't be tracked and doesn't receive a resolution.</p>
           <div className="mt-5 flex items-start gap-2 text-left bg-nugold-50 border border-nugold-200 rounded-xl px-4 py-3 max-w-md mx-auto">
             <Info size={16} className="text-nugold-700 shrink-0 mt-0.5" />
-            <p className="text-xs text-nugold-800 leading-relaxed">Need <Highlight>actual resolutions and trackable actions</Highlight>? <Link to="/submit/complaint" className="font-bold underline">File a formal complaint</Link> instead.</p>
+            <p className="text-xs text-nugold-800 leading-relaxed">Need <Highlight>actual resolutions and trackable actions</Highlight>? <Link to="/submit/complaint" className="font-bold underline">File a formal concern</Link> instead.</p>
           </div>
           <div className="mt-7"><Link to="/" className="text-sm font-semibold text-nublue-600 hover:text-nublue-800">Back to home</Link></div>
         </div>
@@ -320,17 +320,17 @@ function SubmitForm({ type }) {
   return (
     <PublicShell>
       <div className="mb-5">
-        <h1 className="text-2xl font-extrabold text-nublue-700 gold-underline inline-block">{isComplaint ? 'File a Formal Complaint' : 'Give Feedback'}</h1>
+        <h1 className="text-2xl font-extrabold text-nublue-700 gold-underline inline-block">{isConcern ? 'File a Formal Concern' : 'Give Feedback'}</h1>
         <p className="text-sm text-slate-500 mt-3">Fields marked <span className="text-red-500">*</span> are required. <Link to="/submit" className="text-nublue-600 font-semibold hover:underline">Change type</Link></p>
       </div>
 
       {/* Explicit notice */}
-      {isComplaint ? (
+      {isConcern ? (
         <div className="mb-6 flex items-start gap-3 bg-nublue-50 border border-nublue-100 rounded-2xl px-4 py-3.5">
           <Users size={18} className="text-nublue-600 shrink-0 mt-0.5" />
           <div>
             <p className="text-sm font-bold text-nublue-800">Identification is required</p>
-            <p className="text-xs text-nublue-800/80 mt-1 leading-relaxed">{COMPLAINT_NOTICE}</p>
+            <p className="text-xs text-nublue-800/80 mt-1 leading-relaxed">{CONCERN_NOTICE}</p>
             <p className="text-xs text-nublue-800/80 mt-1">Prefer to stay anonymous? <Link to="/submit/feedback" className="font-bold underline">Send feedback instead</Link>.</p>
           </div>
         </div>
@@ -340,7 +340,7 @@ function SubmitForm({ type }) {
           <div>
             <p className="text-sm font-bold text-nugold-800">Feedback is for filing and reporting only</p>
             <p className="text-xs text-nugold-800/90 mt-1 leading-relaxed"><FeedbackNoticeText /></p>
-            <Link to="/submit/complaint" className="inline-block text-xs font-bold text-nugold-800 underline mt-1">File a formal complaint instead →</Link>
+            <Link to="/submit/complaint" className="inline-block text-xs font-bold text-nugold-800 underline mt-1">File a formal concern instead →</Link>
           </div>
         </div>
       )}
@@ -351,9 +351,9 @@ function SubmitForm({ type }) {
 
         {/* Identity */}
         <section className="bg-white rounded-2xl border border-slate-100 card-glow p-5 sm:p-6">
-          <h2 className="font-bold text-slate-800 mb-3">1. {isComplaint ? 'Your details' : 'Who is sending this?'}</h2>
+          <h2 className="font-bold text-slate-800 mb-3">1. {isConcern ? 'Your details' : 'Who is sending this?'}</h2>
 
-          {!isComplaint && (
+          {!isConcern && (
             <label className={`flex items-start gap-3 p-4 rounded-xl border cursor-pointer transition ${f.is_anonymous ? 'border-nugold-400 bg-nugold-50' : 'border-slate-200 hover:bg-slate-50'}`}>
               <input type="checkbox" checked={f.is_anonymous} onChange={(e) => setF((p) => ({ ...p, is_anonymous: e.target.checked }))} className="mt-1 accent-[#0033A0]" />
               <div>
@@ -364,18 +364,18 @@ function SubmitForm({ type }) {
           )}
 
           {!anon && (
-            <div className={`grid sm:grid-cols-2 gap-4 animate-fade-in ${!isComplaint ? 'mt-4' : ''}`}>
+            <div className={`grid sm:grid-cols-2 gap-4 animate-fade-in ${!isConcern ? 'mt-4' : ''}`}>
               <div><label className={label}>Full name <span className="text-red-500">*</span></label>
                 <input className={`${input} mt-1`} value={f.complainant_name} onChange={set('complainant_name')} maxLength={150} /></div>
-              <div><label className={label}>{isComplaint ? <>NU email (for Teams) <span className="text-red-500">*</span></> : 'Email (optional)'}</label>
+              <div><label className={label}>{isConcern ? <>NU email (for Teams) <span className="text-red-500">*</span></> : 'Email (optional)'}</label>
                 <input type="email" inputMode="email" autoComplete="email" className={`${input} mt-1`} value={f.email} onChange={set('email')} maxLength={200}
                   placeholder={`yourname@${NU_EMAIL_DOMAIN}`} />
                 <p className="text-[11px] text-slate-400 mt-1">Only {NU_EMAIL_HINT} accounts are accepted.</p></div>
-              <div><label className={label}>Student ID {isComplaint && <span className="text-red-500">*</span>}</label>
+              <div><label className={label}>Student ID {isConcern && <span className="text-red-500">*</span>}</label>
                 <input className={`${input} mt-1 font-mono`} value={f.student_id} onChange={setStudentId} maxLength={12} inputMode="numeric"
                   placeholder="20XX-XXXXXXX" autoComplete="off" />
                 <p className="text-[11px] text-slate-400 mt-1">Format: 20XX-XXXXXX or 20XX-XXXXXXX (6 or 7 digits after the hyphen).</p></div>
-              {isComplaint && (
+              {isConcern && (
                 <div><label className={label}>Contact number</label>
                   <input className={`${input} mt-1`} value={f.contact_no} onChange={set('contact_no')} maxLength={50} /></div>
               )}
@@ -403,9 +403,9 @@ function SubmitForm({ type }) {
 
         {/* Content */}
         <section className="bg-white rounded-2xl border border-slate-100 card-glow p-5 sm:p-6 space-y-4">
-          <h2 className="font-bold text-slate-800">2. {isComplaint ? 'What is your concern?' : 'What would you like to tell us?'}</h2>
+          <h2 className="font-bold text-slate-800">2. {isConcern ? 'What is your concern?' : 'What would you like to tell us?'}</h2>
 
-          {!isComplaint && (
+          {!isConcern && (
             <div><label className={label}>Type of feedback <span className="text-red-500">*</span></label>
               <select className={`${input} mt-1`} value={f.feedback_type} onChange={set('feedback_type')}>
                 <option value="">Select…</option>
@@ -420,35 +420,35 @@ function SubmitForm({ type }) {
             </div>
           </div>
 
-          {isComplaint && (
+          {isConcern && (
             <div className="grid sm:grid-cols-2 gap-4">
               <div><label className={label}>Date of incident</label>
                 <input type="date" max={today} className={`${input} mt-1`} value={f.incident_date} onChange={set('incident_date')} /></div>
             </div>
           )}
           <div><label className={label}>Subject <span className="text-red-500">*</span></label>
-            <ModeratedField mode={isComplaint ? 'warn' : 'block'} className={`${input} mt-1`} value={f.subject} onChange={set('subject')} maxLength={200} placeholder="A short title" /></div>
-          <div><label className={label}>{isComplaint ? 'Description' : 'Your feedback'} <span className="text-red-500">*</span></label>
-            <ModeratedField as="textarea" mode={isComplaint ? 'warn' : 'block'} rows={6} className={`${input} mt-1 resize-y`} value={f.description} onChange={set('description')} maxLength={5000}
-              placeholder={isComplaint ? 'What happened? When and where? Who was involved? Include as much detail as you can.' : 'Share your suggestion, compliment or concern.'} />
+            <ModeratedField mode={isConcern ? 'warn' : 'block'} className={`${input} mt-1`} value={f.subject} onChange={set('subject')} maxLength={200} placeholder="A short title" /></div>
+          <div><label className={label}>{isConcern ? 'Description' : 'Your feedback'} <span className="text-red-500">*</span></label>
+            <ModeratedField as="textarea" mode={isConcern ? 'warn' : 'block'} rows={6} className={`${input} mt-1 resize-y`} value={f.description} onChange={set('description')} maxLength={5000}
+              placeholder={isConcern ? 'What happened? When and where? Who was involved? Include as much detail as you can.' : 'Share your suggestion, compliment or concern.'} />
             <p className="text-[11px] text-slate-400 mt-1 text-right">{f.description.length}/5000</p>
 </div>
-          <div className={isComplaint ? 'grid sm:grid-cols-2 gap-4' : ''}>
-            {isComplaint && (
+          <div className={isConcern ? 'grid sm:grid-cols-2 gap-4' : ''}>
+            {isConcern && (
               <div><label className={label}>Where did it happen?</label>
                 <input className={`${input} mt-1`} value={f.incident_location} onChange={set('incident_location')} maxLength={200} placeholder="Office, room, organization, online…" /></div>
             )}
-            <div><label className={label}>{isComplaint ? 'Person / office concerned' : 'Office or person concerned (helps us forward it)'}</label>
-              <ModeratedField mode={isComplaint ? 'warn' : 'block'} className={`${input} mt-1`} value={f.respondent} onChange={set('respondent')} maxLength={200} placeholder={isComplaint ? 'Who is this complaint about?' : 'e.g. Registrar, Library, SCS Student Council'} /></div>
+            <div><label className={label}>{isConcern ? 'Person / office concerned' : 'Office or person concerned (helps us forward it)'}</label>
+              <ModeratedField mode={isConcern ? 'warn' : 'block'} className={`${input} mt-1`} value={f.respondent} onChange={set('respondent')} maxLength={200} placeholder={isConcern ? 'Who is this concern about?' : 'e.g. Registrar, Library, SCS Student Council'} /></div>
           </div>
-          {isComplaint && (
+          {isConcern && (
             <div><label className={label}>What outcome would you like?</label>
               <ModeratedField as="textarea" mode="warn" rows={2} className={`${input} mt-1 resize-y`} value={f.desired_outcome} onChange={set('desired_outcome')} maxLength={1000} placeholder="Optional" /></div>
           )}
         </section>
 
-        {/* Evidence (complaints only) */}
-        {isComplaint && (
+        {/* Evidence (concerns only) */}
+        {isConcern && (
           <section className="bg-white rounded-2xl border border-slate-100 card-glow p-5 sm:p-6">
             <h2 className="font-bold text-slate-800 mb-1">3. Evidence <span className="text-xs font-medium text-red-500">*</span></h2>
             <p className="text-xs text-slate-500 mb-3">Required · Up to {MAX_FILES} files · JPG, PNG, WebP or PDF · 5 MB each</p>
@@ -472,14 +472,14 @@ function SubmitForm({ type }) {
           </section>
         )}
 
-        {/* Confidentiality (complaints only) */}
-        {isComplaint && (
+        {/* Confidentiality (concerns only) */}
+        {isConcern && (
           <section className="bg-white rounded-2xl border border-slate-100 card-glow p-5 sm:p-6">
             <label className={`flex items-start gap-3 p-4 rounded-xl border cursor-pointer transition ${f.is_confidential ? 'border-nublue-400 bg-nublue-50' : 'border-slate-200 hover:bg-slate-50'}`}>
               <input type="checkbox" checked={f.is_confidential} onChange={(e) => setF((p) => ({ ...p, is_confidential: e.target.checked }))} className="mt-1 accent-[#0033A0]" />
               <div>
                 <p className="text-sm font-semibold text-slate-800 flex items-center gap-1.5"><ShieldCheck size={15} className="text-nublue-600" /> Mark as Confidential</p>
-                <p className="text-xs text-slate-500 mt-0.5">Only administrators and the concerned office will be able to see the full details of this complaint. Other Council staff will only see that it exists and its status.</p>
+                <p className="text-xs text-slate-500 mt-0.5">Only administrators and the concerned office will be able to see the full details of this concern. Other Council staff will only see that it exists and its status.</p>
               </div>
             </label>
           </section>
@@ -490,7 +490,7 @@ function SubmitForm({ type }) {
           <label className="flex items-start gap-3 cursor-pointer">
             <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} className="mt-1 accent-[#0033A0]" />
             <span className="text-sm text-slate-600 leading-relaxed">
-              {isComplaint
+              {isConcern
                 ? 'I confirm that the information above is true to the best of my knowledge, and I understand that a representative may contact me via Microsoft Teams to confirm the details of this report.'
                 : 'I understand that feedback is for filing and reporting only, will be forwarded to the concerned office(s), and will not receive a resolution or trackable actions.'}
             </span>
@@ -500,7 +500,7 @@ function SubmitForm({ type }) {
 
           <button type="submit" disabled={busy}
             className="mt-5 w-full sm:w-auto bg-gradient-to-r from-nublue-600 to-nublue-500 hover:from-nublue-700 hover:to-nublue-600 text-white font-bold px-8 py-3 rounded-xl shadow-glow transition flex items-center justify-center gap-2 disabled:opacity-60">
-            {busy ? <><Loader2 size={17} className="animate-spin" /> Submitting…</> : <><Send size={17} /> {isComplaint ? 'Submit Complaint' : 'Submit Feedback'}</>}
+            {busy ? <><Loader2 size={17} className="animate-spin" /> Submitting…</> : <><Send size={17} /> {isConcern ? 'Submit Concern' : 'Submit Feedback'}</>}
           </button>
         </section>
       </form>

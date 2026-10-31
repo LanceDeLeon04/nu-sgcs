@@ -45,20 +45,20 @@ export default function Dashboard() {
 
   if (!rows) return (<div><Navbar title="Dashboard" /><p className="p-8 text-sm text-slate-400">Loading…</p></div>)
 
-  const complaints = rows.filter((r) => r.type !== 'feedback')
+  const concerns = rows.filter((r) => r.type !== 'feedback')
   const feedback = rows.filter((r) => r.type === 'feedback')
-  const count = (keys) => complaints.filter((r) => keys.includes(r.status)).length
-  const rated = complaints.filter((r) => r.satisfaction_rating)
+  const count = (keys) => concerns.filter((r) => keys.includes(r.status)).length
+  const rated = concerns.filter((r) => r.satisfaction_rating)
   const avg = rated.length ? (rated.reduce((a, r) => a + r.satisfaction_rating, 0) / rated.length).toFixed(1) : null
   const unroutedCount = rows.filter((r) => !r.office_department && r.office_unsure).length
 
   const cards = [
-    { label: 'New', sub: 'awaiting review', value: count(['received']), icon: Inbox, color: 'from-nublue-600 to-nublue-500', to: '/staff/complaints?type=complaint&status=received' },
-    { label: 'Active', sub: 'under review / in progress', value: count(['under_review', 'in_progress', 'escalated']), icon: Hourglass, color: 'from-nublue-700 to-nublue-600', to: '/staff/complaints?type=complaint&status=open' },
-    { label: 'Overdue', sub: 'open for over a week', value: complaints.filter(isOverdue).length, icon: AlertTriangle, color: 'from-red-600 to-red-500', to: '/staff/complaints?type=complaint&status=overdue' },
-    { label: 'Resolved', sub: 'resolved or closed', value: count(['resolved', 'closed']), icon: CheckCircle2, color: 'from-nugold-500 to-nugold-400', to: '/staff/complaints?type=complaint&status=done' },
-    { label: 'Feedback', sub: 'to forward', value: feedback.filter((r) => r.status === 'received').length, icon: MessageSquareText, color: 'from-teal-700 to-teal-500', to: '/staff/complaints?type=feedback' },
-    { label: 'Not routed', sub: 'student wasn\'t sure which office', value: unroutedCount, icon: AlertTriangle, color: 'from-orange-600 to-orange-500', to: '/staff/complaints?department=unrouted' },
+    { label: 'New', sub: 'awaiting review', value: count(['received']), icon: Inbox, color: 'from-nublue-600 to-nublue-500', to: '/staff/concerns?type=concern&status=received' },
+    { label: 'Active', sub: 'under review / in progress', value: count(['under_review', 'in_progress', 'escalated']), icon: Hourglass, color: 'from-nublue-700 to-nublue-600', to: '/staff/concerns?type=concern&status=open' },
+    { label: 'Overdue', sub: 'open for over a week', value: concerns.filter(isOverdue).length, icon: AlertTriangle, color: 'from-red-600 to-red-500', to: '/staff/concerns?type=concern&status=overdue' },
+    { label: 'Resolved', sub: 'resolved or closed', value: count(['resolved', 'closed']), icon: CheckCircle2, color: 'from-nugold-500 to-nugold-400', to: '/staff/concerns?type=concern&status=done' },
+    { label: 'Feedback', sub: 'to forward', value: feedback.filter((r) => r.status === 'received').length, icon: MessageSquareText, color: 'from-teal-700 to-teal-500', to: '/staff/concerns?type=feedback' },
+    { label: 'Not routed', sub: 'student wasn\'t sure which office', value: unroutedCount, icon: AlertTriangle, color: 'from-orange-600 to-orange-500', to: '/staff/concerns?department=unrouted' },
   ]
 
   const byStatus = STATUS_KEYS.map((k) => ({ key: k, label: STATUSES[k].label, value: rows.filter((r) => r.status === k).length })).filter((r) => r.value > 0)
@@ -69,27 +69,27 @@ export default function Dashboard() {
     .filter((r) => r.type !== 'feedback' && OPEN_STATUSES.includes(r.status) && (r.status === 'received' || r.priority === 'urgent' || isOverdue(r)))
     .slice(0, 6)
 
-  // --- Analytics: submissions over the last 10 weeks (complaints vs feedback) ---
+  // --- Analytics: submissions over the last 10 weeks (concerns vs feedback) ---
   const WEEKS = 10
   const startOfWeek = (d) => { const x = new Date(d); const day = (x.getDay() + 6) % 7; x.setHours(0, 0, 0, 0); x.setDate(x.getDate() - day); return x }
   const thisWeekStart = startOfWeek(new Date())
   const weekBuckets = Array.from({ length: WEEKS }, (_, i) => {
     const start = new Date(thisWeekStart); start.setDate(start.getDate() - (WEEKS - 1 - i) * 7)
-    return { start, label: start.toLocaleDateString('en-PH', { month: 'short', day: 'numeric' }), complaints: 0, feedback: 0 }
+    return { start, label: start.toLocaleDateString('en-PH', { month: 'short', day: 'numeric' }), concerns: 0, feedback: 0 }
   })
   rows.forEach((r) => {
     const ws = startOfWeek(new Date(r.submitted_at)).getTime()
     const bucket = weekBuckets.find((b) => b.start.getTime() === ws)
-    if (bucket) { if (r.type === 'feedback') bucket.feedback++; else bucket.complaints++ }
+    if (bucket) { if (r.type === 'feedback') bucket.feedback++; else bucket.concerns++ }
   })
-  const trendData = weekBuckets.map(({ label, complaints, feedback }) => ({ label, complaints, feedback }))
+  const trendData = weekBuckets.map(({ label, concerns, feedback }) => ({ label, concerns, feedback }))
 
-  // --- Priority mix among open complaints ---
-  const openComplaints = complaints.filter((r) => OPEN_STATUSES.includes(r.status))
-  const priorityData = Object.keys(PRIORITIES).map((k) => ({ key: k, label: PRIORITIES[k].label, value: openComplaints.filter((r) => r.priority === k).length }))
+  // --- Priority mix among open concerns ---
+  const openConcerns = concerns.filter((r) => OPEN_STATUSES.includes(r.status))
+  const priorityData = Object.keys(PRIORITIES).map((k) => ({ key: k, label: PRIORITIES[k].label, value: openConcerns.filter((r) => r.priority === k).length }))
 
   // --- Time-to-resolution (days from submitted to resolved/closed) ---
-  const resolvedRows = complaints
+  const resolvedRows = concerns
     .map((r) => ({ ...r, doneAt: r.resolved_at || r.closed_at }))
     .filter((r) => r.doneAt)
     .map((r) => (new Date(r.doneAt) - new Date(r.submitted_at)) / 86400000)
@@ -111,15 +111,15 @@ export default function Dashboard() {
 
   // --- Open caseload per staff member ---
   const staffName = (id) => staffList.find((s) => s.user_id === id)?.full_name || 'Unassigned'
-  const assignedOpen = complaints.filter((r) => OPEN_STATUSES.includes(r.status) && r.assigned_to)
+  const assignedOpen = concerns.filter((r) => OPEN_STATUSES.includes(r.status) && r.assigned_to)
   const staffWorkload = [...new Set(assignedOpen.map((r) => r.assigned_to))]
     .map((id) => ({ label: staffName(id), value: assignedOpen.filter((r) => r.assigned_to === id).length }))
     .sort((a, b) => b.value - a.value)
     .slice(0, 8)
 
   // --- Week-over-week delta for new submissions ---
-  const thisWeekCount = weekBuckets[weekBuckets.length - 1]?.complaints + weekBuckets[weekBuckets.length - 1]?.feedback || 0
-  const lastWeekCount = weekBuckets[weekBuckets.length - 2]?.complaints + weekBuckets[weekBuckets.length - 2]?.feedback || 0
+  const thisWeekCount = weekBuckets[weekBuckets.length - 1]?.concerns + weekBuckets[weekBuckets.length - 1]?.feedback || 0
+  const lastWeekCount = weekBuckets[weekBuckets.length - 2]?.concerns + weekBuckets[weekBuckets.length - 2]?.feedback || 0
   const weekDelta = lastWeekCount ? Math.round(((thisWeekCount - lastWeekCount) / lastWeekCount) * 100) : null
 
   return (
@@ -144,16 +144,16 @@ export default function Dashboard() {
         </div>
 
         <div className="bg-white rounded-2xl border border-slate-100 card-glow p-6 mb-5">
-          <h2 className="font-bold text-slate-800 mb-4">Complaints needing attention</h2>
+          <h2 className="font-bold text-slate-800 mb-4">Concerns needing attention</h2>
           {attention.length === 0 ? (
             <p className="text-sm text-slate-400">Nothing urgent — you're all caught up.</p>
           ) : (
             <ul className="divide-y divide-slate-100">
               {attention.map((r) => (
                 <li key={r.id}>
-                  <Link to={`/staff/complaints/${r.id}`} className="flex items-center justify-between gap-3 py-3 hover:bg-slate-50 -mx-2 px-2 rounded-lg transition">
+                  <Link to={`/staff/concerns/${r.id}`} className="flex items-center justify-between gap-3 py-3 hover:bg-slate-50 -mx-2 px-2 rounded-lg transition">
                     <div className="min-w-0">
-                      <p className="text-sm font-semibold text-slate-700 truncate">{r.subject || (r.is_confidential ? 'Confidential complaint' : '—')}</p>
+                      <p className="text-sm font-semibold text-slate-700 truncate">{r.subject || (r.is_confidential ? 'Confidential concern' : '—')}</p>
                       <p className="text-[11px] text-slate-400">{r.reference_no} · {deptOf(r)} · {fmtDate(r.submitted_at)}
                         {isOverdue(r) && <span className="text-red-500 font-semibold"> · {daysOpen(r)} days open</span>}
                         {r.priority === 'urgent' && <span className="text-red-500 font-semibold"> · Urgent</span>}
@@ -181,7 +181,7 @@ export default function Dashboard() {
           </div>
 
           <div className="bg-white rounded-2xl border border-slate-100 card-glow p-6">
-            <h2 className="font-bold text-slate-800 mb-2">By status <span className="text-xs font-normal text-slate-400">(complaints + feedback)</span></h2>
+            <h2 className="font-bold text-slate-800 mb-2">By status <span className="text-xs font-normal text-slate-400">(concerns + feedback)</span></h2>
             <StatusDonutChart data={byStatus} total={rows.length} />
             {avg && (
               <div className="mt-4 pt-4 border-t border-slate-100 flex items-center gap-2 text-sm text-slate-600">
@@ -194,7 +194,7 @@ export default function Dashboard() {
 
         <div className="grid lg:grid-cols-3 gap-5 mb-5">
           <div className="bg-white rounded-2xl border border-slate-100 card-glow p-6">
-            <h2 className="font-bold text-slate-800 mb-4">Priority mix <span className="text-xs font-normal text-slate-400">(open complaints)</span></h2>
+            <h2 className="font-bold text-slate-800 mb-4">Priority mix <span className="text-xs font-normal text-slate-400">(open concerns)</span></h2>
             <PriorityBarChart data={priorityData} />
           </div>
 
@@ -226,8 +226,8 @@ export default function Dashboard() {
 
         <div className="grid lg:grid-cols-3 gap-5 mb-5">
           <div className="bg-white rounded-2xl border border-slate-100 card-glow p-6">
-            <h2 className="font-bold text-slate-800 mb-4">By department <span className="text-xs font-normal text-slate-400">(complaints + feedback)</span></h2>
-            {byCat.length ? <Bars rows={byCat} total={rows.length} color="bg-nugold-500" /> : <p className="text-sm text-slate-400">No complaints yet.</p>}
+            <h2 className="font-bold text-slate-800 mb-4">By department <span className="text-xs font-normal text-slate-400">(concerns + feedback)</span></h2>
+            {byCat.length ? <Bars rows={byCat} total={rows.length} color="bg-nugold-500" /> : <p className="text-sm text-slate-400">No concerns yet.</p>}
           </div>
 
           <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-100 card-glow p-6">

@@ -1,8 +1,8 @@
 -- =====================================================================
 -- NUplift: Campus Feedback and Action Portal: migration
---   CONFIDENTIAL COMPLAINTS
+--   CONFIDENTIAL CONCERNS
 --
---   • Students filing a formal Complaint can check "Mark as Confidential".
+--   • Students filing a formal Concern can check "Mark as Confidential".
 --   • When checked:
 --       - Council staff who are NOT admins can still see the case in
 --         their list/detail (reference no., status, priority, dates) but
@@ -13,7 +13,7 @@
 --         code link — unchanged by this migration) continues to see the
 --         full case, and can now change the status themselves
 --         (previously only Council staff could change status).
---   • Non-confidential complaints/feedback behave exactly as before.
+--   • Non-confidential concerns/feedback behave exactly as before.
 --
 -- RUN ORDER: after migration_office_redirect_request.sql (needs
 -- gc_find_complaint_by_ref, gc_office_get_case, office access codes).
@@ -27,7 +27,7 @@ alter table public.gc_complaints add column if not exists is_confidential boolea
 create index if not exists gc_complaints_confidential_idx on public.gc_complaints(is_confidential);
 
 -- ---------------------------------------------------------
--- 2. Submit complaint: accept is_confidential (complaints only —
+-- 2. Submit concern: accept is_confidential (concerns only —
 --    feedback has its own anonymity option and is unaffected).
 -- ---------------------------------------------------------
 create or replace function public.gc_submit_complaint(p jsonb)
@@ -69,7 +69,7 @@ begin
     raise exception 'Description must be between 20 and 5000 characters.';
   end if;
   if v_anon then
-    raise exception 'Formal complaints require identification. To stay anonymous, submit Feedback instead.';
+    raise exception 'Formal concerns require identification. To stay anonymous, submit Feedback instead.';
   end if;
   if v_name is null then raise exception 'Please provide your full name.'; end if;
   if v_student !~ '^20[0-9]{2}-[0-9]{6,7}$' then
@@ -118,7 +118,7 @@ begin
 
   insert into public.gc_updates (complaint_id, author_type, author_name, kind, message, is_public)
   values (v_id, 'system', 'System', 'submitted',
-          'Complaint received' || case when v_att_count > 0 then ' with ' || v_att_count || ' attachment(s)' else '' end
+          'Concern received' || case when v_att_count > 0 then ' with ' || v_att_count || ' attachment(s)' else '' end
           || case when v_confidential then ' (marked confidential).'
                   when v_dname is not null then ' and sent to ' || v_dname || ' › ' || v_uname || '.'
                   else '. It will be routed to the right office by the Council.' end,
@@ -174,14 +174,14 @@ revoke all on public.gc_staff_complaints from anon;
 --    Non-admin staff lose direct table access to a confidential row's
 --    columns entirely (they only ever see it through the redacted view
 --    above, or not at all if they query the base table directly), and
---    cannot update a confidential complaint (only admins, or the office
+--    cannot update a confidential concern (only admins, or the office
 --    via the RPC in section 6, can).
 -- ---------------------------------------------------------
-drop policy if exists "gc complaints: staff read"   on public.gc_complaints;
-drop policy if exists "gc complaints: staff update" on public.gc_complaints;
-create policy "gc complaints: staff read" on public.gc_complaints for select to authenticated
+drop policy if exists "gc concerns: staff read"   on public.gc_complaints;
+drop policy if exists "gc concerns: staff update" on public.gc_complaints;
+create policy "gc concerns: staff read" on public.gc_complaints for select to authenticated
   using (public.gc_is_staff() and (not is_confidential or public.gc_is_admin()));
-create policy "gc complaints: staff update" on public.gc_complaints for update to authenticated
+create policy "gc concerns: staff update" on public.gc_complaints for update to authenticated
   using (public.gc_is_staff() and (not is_confidential or public.gc_is_admin()))
   with check (public.gc_is_staff() and (not is_confidential or public.gc_is_admin()));
 
@@ -278,7 +278,7 @@ revoke all on function public.gc_office_get_case(text, text) from public, anon, 
 grant execute on function public.gc_office_get_case(text, text) to anon, authenticated;
 
 -- ---------------------------------------------------------
--- 6. Office updates the status itself (confidential complaints only —
+-- 6. Office updates the status itself (confidential concerns only —
 --    on a non-confidential case Council staff still own the status).
 --    Reuses the existing before/after-update triggers, so timestamps
 --    (resolved_at/closed_at) and the public status_change timeline
@@ -295,7 +295,7 @@ begin
     raise exception 'Invalid case or code.';
   end if;
   if c.type <> 'complaint' then
-    raise exception 'Only complaints have a status your office can change here.';
+    raise exception 'Only concerns have a status your office can change here.';
   end if;
   if not c.is_confidential then
     raise exception 'This case is not confidential — please let the Council know and they will update its status.';

@@ -2,8 +2,8 @@
 -- OPTIONAL — run AFTER schema.sql
 --
 -- Copies the SCS File Repository's admin accounts (public.profiles
--- where role = 'admin') into gc_staff as complaint-system ADMINS,
--- so they can sign in to the Council of Leaders complaints system
+-- where role = 'admin') into gc_staff as concern-system ADMINS,
+-- so they can sign in to the Council of Leaders concerns system
 -- with the same email + password they already use.
 --
 -- This only READS public.profiles; it never modifies it.

@@ -45,7 +45,7 @@ export default function Team() {
       const username = data.login.endsWith('@col.local') ? data.login.replace('@col.local', '') : data.login
       setCreated({ login: username, password: form.password, name: form.full_name })
     } else {
-      setMsg({ type: 'success', text: `${form.full_name} already had a login (${data?.login}), so it was linked to the complaints system. Their password was not changed.` })
+      setMsg({ type: 'success', text: `${form.full_name} already had a login (${data?.login}), so it was linked to the concerns system. Their password was not changed.` })
     }
     setForm({ login: '', password: '', full_name: '', position: '', role: 'handler' })
     load()
@@ -76,7 +76,7 @@ export default function Team() {
       <Navbar title="Manage Staff" />
       <div className="p-8 grid xl:grid-cols-3 gap-5">
         <div className="xl:col-span-2 bg-white rounded-2xl border border-slate-100 card-glow p-6 h-fit">
-          <h2 className="font-bold text-slate-800 mb-4">Complaints staff</h2>
+          <h2 className="font-bold text-slate-800 mb-4">Concerns staff</h2>
 
           {msg && <div className={`mb-4 text-xs rounded-lg px-3 py-2 border break-words ${msg.type === 'error' ? 'text-red-700 bg-red-50 border-red-200' : 'text-emerald-700 bg-emerald-50 border-emerald-200'}`}>{msg.text}</div>}
 

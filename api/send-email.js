@@ -87,7 +87,7 @@ function wrap({ eyebrow, heading, bodyHtml, code, trackUrl }) {
                     ${trackUrl ? `
                     <table role="presentation" cellpadding="0" cellspacing="0" style="margin-top:14px;">
                       <tr><td style="background:${NUBLUE};border-radius:8px;">
-                        <a href="${escapeHtml(trackUrl)}" style="display:inline-block;padding:10px 20px;color:#ffffff;font-size:13px;font-weight:700;text-decoration:none;">Track this complaint &rarr;</a>
+                        <a href="${escapeHtml(trackUrl)}" style="display:inline-block;padding:10px 20px;color:#ffffff;font-size:13px;font-weight:700;text-decoration:none;">Track this concern &rarr;</a>
                       </td></tr>
                     </table>` : ''}
                   </td>
@@ -121,13 +121,13 @@ function buildMessage(type, p) {
 
   if (type === 'confirmation') {
     return {
-      subject: `We received your complaint (${code})`,
+      subject: `We received your concern (${code})`,
       html: wrap({
-        eyebrow: 'Complaint received', heading: 'Your complaint has been received',
+        eyebrow: 'Concern received', heading: 'Your concern has been received',
         code, trackUrl,
         bodyHtml: `
           <p style="margin:0 0 12px;">Hi ${name},</p>
-          <p style="margin:0 0 12px;">Your formal complaint has been received and logged with the Council of Leaders. It is now in the queue for review.</p>
+          <p style="margin:0 0 12px;">Your formal concern has been received and logged with the Council of Leaders. It is now in the queue for review.</p>
           <p style="margin:0;">A representative may reach out to you via <b>Microsoft Teams</b> to confirm the details of your report. Keep your tracking code below to follow every update.</p>`,
       }),
     }
@@ -144,13 +144,13 @@ function buildMessage(type, p) {
             </td></tr>
           </table>` : ''
     return {
-      subject: `Your complaint status changed to "${p.statusLabel}" (${code})`,
+      subject: `Your concern status changed to "${p.statusLabel}" (${code})`,
       html: wrap({
-        eyebrow: 'Status update', heading: 'Your complaint status has been updated',
+        eyebrow: 'Status update', heading: 'Your concern status has been updated',
         code, trackUrl,
         bodyHtml: `
           <p style="margin:0 0 14px;">Hi ${name},</p>
-          <p style="margin:0 0 6px;">The status of your complaint is now:</p>
+          <p style="margin:0 0 6px;">The status of your concern is now:</p>
           <span style="display:inline-block;padding:6px 14px;border-radius:999px;background:${colors.bg};color:${colors.fg};border:1px solid ${colors.border};font-size:13px;font-weight:700;">${statusLabel}</span>
           ${summary}`,
       }),
@@ -179,13 +179,13 @@ function buildMessage(type, p) {
 
   if (type === 'reply') {
     return {
-      subject: `A representative replied to your complaint (${code})`,
+      subject: `A representative replied to your concern (${code})`,
       html: wrap({
-        eyebrow: 'New reply', heading: 'A representative replied to your complaint',
+        eyebrow: 'New reply', heading: 'A representative replied to your concern',
         code, trackUrl,
         bodyHtml: `
           <p style="margin:0 0 14px;">Hi ${name},</p>
-          <p style="margin:0 0 10px;">A representative has posted a reply on your complaint:</p>
+          <p style="margin:0 0 10px;">A representative has posted a reply on your concern:</p>
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
             <tr><td style="border-left:3px solid ${NUGOLD};background:#f8fafc;border-radius:0 10px 10px 0;padding:14px 16px;">
               <p style="margin:0;color:#334155;font-size:13.5px;">${nl2br(p.message)}</p>
@@ -197,11 +197,11 @@ function buildMessage(type, p) {
 
   if (type === 'office_forward') {
     const office = escapeHtml(p.unitName || 'Office')
-    const itemLabel = p.itemType === 'feedback' ? 'feedback' : 'complaint'
+    const itemLabel = p.itemType === 'feedback' ? 'feedback' : 'concern'
     const officeLabel = [p.department, p.unit, p.concern].filter(Boolean).map(escapeHtml).join(' &rsaquo; ')
       || escapeHtml(p.category || '')
 
-    // Reporting student block — respects is_anonymous (feedback only; complaints are never anonymous).
+    // Reporting student block — respects is_anonymous (feedback only; concerns are never anonymous).
     const identityRows = p.isAnonymous
       ? `<p style="margin:0;color:#64748b;font-size:13.5px;font-style:italic;">Filed anonymously — no identity on file.</p>`
       : [
@@ -233,7 +233,7 @@ function buildMessage(type, p) {
         ? `[Escalated] New ${itemLabel} for your attention (${p.referenceNo || ''})`
         : `New ${itemLabel} forwarded to ${office} (${p.referenceNo || ''})`,
       html: wrap({
-        eyebrow: p.escalationNote ? `${itemLabel === 'feedback' ? 'Feedback' : 'Complaint'} escalated` : `${itemLabel === 'feedback' ? 'Feedback' : 'Complaint'} forwarded`,
+        eyebrow: p.escalationNote ? `${itemLabel === 'feedback' ? 'Feedback' : 'Concern'} escalated` : `${itemLabel === 'feedback' ? 'Feedback' : 'Concern'} forwarded`,
         heading: p.escalationNote ? `A ${itemLabel} was escalated to you` : `A ${itemLabel} was forwarded to ${office}`,
         bodyHtml: `
           ${p.escalationNote
@@ -307,7 +307,7 @@ function buildMessage(type, p) {
 
   if (type === 'director_escalation') {
     const dept = p.department || 'your department'
-    const itemLabel = p.itemType === 'feedback' ? 'feedback' : 'complaint'
+    const itemLabel = p.itemType === 'feedback' ? 'feedback' : 'concern'
     if (p.reason === 'concern') {
       // Same full-detail email the office would have received, with an escalation banner.
       return buildMessage('office_forward', {
@@ -372,7 +372,7 @@ function buildMessage(type, p) {
               </td>
             </tr>`).join('')
     const more = p.moreCount > 0 ? `<p style="margin:10px 0 0;color:#64748b;font-size:12.5px;">&hellip;and ${Number(p.moreCount)} more not listed.</p>` : ''
-    const older = p.olderOpen > 0 ? `<p style="margin:14px 0 0;">Also still open from earlier weeks: <b>${Number(p.olderOpen)}</b> complaint${p.olderOpen === 1 ? '' : 's'}.</p>` : ''
+    const older = p.olderOpen > 0 ? `<p style="margin:14px 0 0;">Also still open from earlier weeks: <b>${Number(p.olderOpen)}</b> concern${p.olderOpen === 1 ? '' : 's'}.</p>` : ''
     const reportBtn = /^https?:\/\//.test(p.reportUrl || '') ? `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 16px;"><tr><td style="background:${NUBLUE};border-radius:10px;"><a href="${escapeHtml(p.reportUrl)}" style="display:inline-block;padding:11px 20px;color:#ffffff;font-size:13.5px;font-weight:700;text-decoration:none;">View the full weekly report (charts &amp; visualizations) &rarr;</a></td></tr></table>` : ''
     return {
       subject: `Weekly summary: ${p.total} concern${p.total === 1 ? '' : 's'} for ${p.departmentName || 'your department'} (${p.periodLabel || ''})`,

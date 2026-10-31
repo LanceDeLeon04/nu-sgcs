@@ -5,7 +5,7 @@
 --   • Every unit gets an EDITABLE short code (e.g. Accounting -> ACCT).
 --     Admins edit it in Offices & Concerns. Codes are unique, 2-8 letters/digits.
 --   • Every case gets a case number built from its unit's code:
---         Complaint:  GC-<UNIT>-0001     e.g. GC-ACCT-0001
+--         Concern:  GC-<UNIT>-0001     e.g. GC-ACCT-0001
 --         Feedback:   FB-<UNIT>-0001     e.g. FB-ACCT-0001
 --     The sequence runs per prefix + code and never repeats, even if a code
 --     is later edited (old cases keep the number they were issued).
@@ -174,7 +174,7 @@ begin
     raise exception 'Description must be between 20 and 5000 characters.';
   end if;
   if v_anon then
-    raise exception 'Formal complaints require identification. To stay anonymous, submit Feedback instead.';
+    raise exception 'Formal concerns require identification. To stay anonymous, submit Feedback instead.';
   end if;
   if v_name is null then raise exception 'Please provide your full name.'; end if;
   if v_student !~ '^20[0-9]{2}-[0-9]{6,7}$' then
@@ -233,7 +233,7 @@ begin
 
   insert into public.gc_updates (complaint_id, author_type, author_name, kind, message, is_public)
   values (v_id, 'system', 'System', 'submitted',
-          'Complaint received with ' || v_att_count || ' attachment(s)'
+          'Concern received with ' || v_att_count || ' attachment(s)'
           || case when v_confidential then ' (marked confidential).'
                   when v_dname is not null then ' and sent to ' || v_dname || ' › ' || v_uname || '.'
                   else '. It will be routed to the right office by the Council.' end,
@@ -320,7 +320,7 @@ end $$;
 grant execute on function public.gc_submit_complaint(jsonb) to anon, authenticated;
 grant execute on function public.gc_submit_feedback(jsonb)  to anon, authenticated;
 
--- 5. Case number for a just-filed complaint ---------------------------
+-- 5. Case number for a just-filed concern ---------------------------
 -- The submit RPC returns the private tracking code; this returns the matching
 -- public case number so the success screen can show both. The tracking code
 -- is a secret only the submitter holds, so this leaks nothing.

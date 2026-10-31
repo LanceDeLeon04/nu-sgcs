@@ -9,13 +9,13 @@ import { isConfigured } from './supabaseClient'
 
 import Landing from './pages/Landing.jsx'
 import Submit from './pages/Submit.jsx'
-import TrackComplaint from './pages/TrackComplaint.jsx'
+import TrackConcern from './pages/TrackConcern.jsx'
 import OfficeCase from './pages/OfficeCase.jsx'
 import WeeklyReport from './pages/WeeklyReport.jsx'
 import StaffLogin from './pages/staff/StaffLogin.jsx'
 import Dashboard from './pages/staff/Dashboard.jsx'
-import Complaints from './pages/staff/Complaints.jsx'
-import ComplaintDetail from './pages/staff/ComplaintDetail.jsx'
+import Concerns from './pages/staff/Concerns.jsx'
+import ConcernDetail from './pages/staff/ConcernDetail.jsx'
 import Team from './pages/staff/Team.jsx'
 import Offices from './pages/staff/Offices.jsx'
 import WeeklyReports from './pages/staff/WeeklyReports.jsx'
@@ -43,7 +43,7 @@ function NoAccess() {
         </div>
         <h1 className="font-bold text-slate-800 text-lg">No access to NUplift</h1>
         <p className="text-sm text-slate-500 mt-2">
-          {session?.user?.email} is signed in, but this account hasn't been added to the complaints staff list
+          {session?.user?.email} is signed in, but this account hasn't been added to the concerns staff list
           (or has been deactivated). Ask a Council of Leaders admin to add you.
         </p>
         <button onClick={signOut}
@@ -101,7 +101,7 @@ export default function App() {
       {/* Public — no account needed */}
       <Route path="/" element={<Landing />} />
       <Route path="/submit/:type?" element={<Submit />} />
-      <Route path="/track/:code?" element={<TrackComplaint />} />
+      <Route path="/track/:code?" element={<TrackConcern />} />
       <Route path="/office/:ref" element={<OfficeCase />} />
       <Route path="/report/:token" element={<WeeklyReport />} />
 
@@ -109,8 +109,8 @@ export default function App() {
       <Route path="/staff/login"
         element={loading ? <LoadingScreen /> : session ? <Navigate to="/staff" replace /> : <StaffLogin />} />
       <Route path="/staff" element={<StaffLayout><Dashboard /></StaffLayout>} />
-      <Route path="/staff/complaints" element={<StaffLayout><Complaints /></StaffLayout>} />
-      <Route path="/staff/complaints/:id" element={<StaffLayout><ComplaintDetail /></StaffLayout>} />
+      <Route path="/staff/concerns" element={<StaffLayout><Concerns /></StaffLayout>} />
+      <Route path="/staff/concerns/:id" element={<StaffLayout><ConcernDetail /></StaffLayout>} />
       <Route path="/staff/team" element={<StaffLayout adminOnly><Team /></StaffLayout>} />
       <Route path="/staff/offices" element={<StaffLayout adminOnly><Offices /></StaffLayout>} />
       <Route path="/staff/reports" element={<StaffLayout adminOnly><WeeklyReports /></StaffLayout>} />

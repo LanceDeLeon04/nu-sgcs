@@ -7,13 +7,13 @@
 //   1. REMINDERS — for every case forwarded to an office (office_forward_email is set) that hasn't reached a
 //      terminal status, if 3 BUSINESS days (Mon-Fri, minus the holidays in gc_holidays) have passed since the
 //      office's last activity (or last reminder), email the office again. Repeats until the case is
-//      resolved/closed/dismissed (complaints) or noted (feedback). Nothing is sent on weekends or holidays.
+//      resolved/closed/dismissed (concerns) or noted (feedback). Nothing is sent on weekends or holidays.
 //   1b. NO-ACTION ESCALATION — after 2 consecutive reminders with still no action from the office, the case is
 //      escalated to the department director ("no action from the office for 1 week"): status -> Escalated,
 //      director emailed with the secure link, timeline entry written. Happens once per stretch of inactivity;
 //      if the office acts and later goes quiet again, it can escalate again.
-//   2. AUTO-CLOSE — any complaint that has sat at "resolved" for 3+ days with no follow-up from the complainant
-//      is moved to "closed" automatically. (A follow-up flips a resolved complaint back to "under_review" via
+//   2. AUTO-CLOSE — any concern that has sat at "resolved" for 3+ days with no follow-up from the complainant
+//      is moved to "closed" automatically. (A follow-up flips a resolved concern back to "under_review" via
 //      gc_add_followup, so still being "resolved" after 3 days reliably means nobody followed up.)
 //
 // Auth: when the CRON_SECRET env var is set, Vercel Cron automatically sends
@@ -32,7 +32,7 @@ import { escalateConcernCase } from './_lib/escalation.js'
 
 const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000
 
-const COMPLAINT_TERMINAL = ['resolved', 'closed', 'dismissed']
+const CONCERN_TERMINAL = ['resolved', 'closed', 'dismissed']
 const FEEDBACK_TERMINAL = ['noted']
 
 // Tuning knobs
@@ -118,7 +118,7 @@ export default async function handler(req, res) {
         .is('director_escalated_at', null)
       if (missedErr) throw missedErr
       for (const row of missed || []) {
-        if ((row.type === 'feedback' ? FEEDBACK_TERMINAL : COMPLAINT_TERMINAL).includes(row.status)) continue
+        if ((row.type === 'feedback' ? FEEDBACK_TERMINAL : CONCERN_TERMINAL).includes(row.status)) continue
         try {
           const out = await escalateConcernCase({ supabase, origin, ref: row.reference_no, sendEmail })
           if (out.emailed) escalatedToDirector++
@@ -129,7 +129,7 @@ export default async function handler(req, res) {
     // ---------------------------------------------------------
     // 1. Reminders (+ no-action escalation) — business days only, never on a weekend or holiday
     // ---------------------------------------------------------
-    const terminalAll = [...new Set([...COMPLAINT_TERMINAL, ...FEEDBACK_TERMINAL])]
+    const terminalAll = [...new Set([...CONCERN_TERMINAL, ...FEEDBACK_TERMINAL])]
     const { data: open, error: openErr } = businessToday ? await supabase
       .from('gc_complaints')
       .select(`
@@ -149,7 +149,7 @@ export default async function handler(req, res) {
     const deptById = Object.fromEntries((deptRows || []).map((d) => [d.id, d]))
 
     for (const row of open || []) {
-      const terminal = row.type === 'feedback' ? FEEDBACK_TERMINAL : COMPLAINT_TERMINAL
+      const terminal = row.type === 'feedback' ? FEEDBACK_TERMINAL : CONCERN_TERMINAL
       if (terminal.includes(row.status)) continue
 
       // 1b. Two reminders ignored -> tell the director (skip if the director IS the office, e.g. a Dean concern)
@@ -224,7 +224,7 @@ export default async function handler(req, res) {
     }
 
     // ---------------------------------------------------------
-    // 2. Auto-close complaints resolved 3+ days ago with no follow-up
+    // 2. Auto-close concerns resolved 3+ days ago with no follow-up
     // ---------------------------------------------------------
     const cutoffIso = new Date(Date.now() - THREE_DAYS_MS).toISOString()
     const { data: stale, error: staleErr } = await supabase

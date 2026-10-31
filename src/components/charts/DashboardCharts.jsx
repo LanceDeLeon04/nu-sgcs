@@ -23,14 +23,14 @@ const EmptyState = ({ label }) => (
   <div className="h-full min-h-[180px] flex items-center justify-center text-sm text-slate-400">{label}</div>
 )
 
-/* Weekly submission volume — stacked area, complaints vs feedback */
+/* Weekly submission volume — stacked area, concerns vs feedback */
 export function SubmissionTrendChart({ data }) {
   if (!data?.length) return <EmptyState label="No submissions yet." />
   return (
     <ResponsiveContainer width="100%" height={240}>
       <AreaChart data={data} margin={{ top: 6, right: 8, left: -20, bottom: 0 }}>
         <defs>
-          <linearGradient id="fillComplaints" x1="0" y1="0" x2="0" y2="1">
+          <linearGradient id="fillConcerns" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor={BRAND.blue} stopOpacity={0.35} />
             <stop offset="100%" stopColor={BRAND.blue} stopOpacity={0.02} />
           </linearGradient>
@@ -44,7 +44,7 @@ export function SubmissionTrendChart({ data }) {
         <YAxis tick={axisTick} axisLine={false} tickLine={false} allowDecimals={false} width={28} />
         <Tooltip {...tooltipStyle} />
         <Legend wrapperStyle={{ fontSize: 12 }} iconType="circle" iconSize={8} />
-        <Area type="monotone" dataKey="complaints" name="Complaints" stroke={BRAND.blue} strokeWidth={2} fill="url(#fillComplaints)" stackId="1" />
+        <Area type="monotone" dataKey="concerns" name="Concerns" stroke={BRAND.blue} strokeWidth={2} fill="url(#fillConcerns)" stackId="1" />
         <Area type="monotone" dataKey="feedback" name="Feedback" stroke={BRAND.gold} strokeWidth={2} fill="url(#fillFeedback)" stackId="1" />
       </AreaChart>
     </ResponsiveContainer>
@@ -53,7 +53,7 @@ export function SubmissionTrendChart({ data }) {
 
 /* Status breakdown — donut with center total */
 export function StatusDonutChart({ data, total }) {
-  if (!data?.length) return <EmptyState label="No complaints yet." />
+  if (!data?.length) return <EmptyState label="No concerns yet." />
   return (
     <div className="relative">
       <ResponsiveContainer width="100%" height={220}>
@@ -80,9 +80,9 @@ export function StatusDonutChart({ data, total }) {
   )
 }
 
-/* Priority mix among currently-open complaints */
+/* Priority mix among currently-open concerns */
 export function PriorityBarChart({ data }) {
-  if (!data?.some((d) => d.value > 0)) return <EmptyState label="No open complaints." />
+  if (!data?.some((d) => d.value > 0)) return <EmptyState label="No open concerns." />
   return (
     <ResponsiveContainer width="100%" height={180}>
       <BarChart data={data} layout="vertical" margin={{ top: 0, right: 16, left: 0, bottom: 0 }}>
@@ -98,7 +98,7 @@ export function PriorityBarChart({ data }) {
   )
 }
 
-/* How long complaints take to resolve, bucketed */
+/* How long concerns take to resolve, bucketed */
 export function ResolutionHistogram({ data }) {
   if (!data?.some((d) => d.value > 0)) return <EmptyState label="Nothing resolved yet." />
   return (

@@ -11,7 +11,7 @@
 --
 --   Anonymous submissions are still respected: feedback filed anonymously
 --   (is_anonymous = true) still shows "Anonymous" instead of identity
---   fields. Formal complaints are never anonymous (enforced elsewhere),
+--   fields. Formal concerns are never anonymous (enforced elsewhere),
 --   so their reporter's identity is always included.
 --
 -- RUN ORDER: after migration_office_forwarding.sql (run once, safe to

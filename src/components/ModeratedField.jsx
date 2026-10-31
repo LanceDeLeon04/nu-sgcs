@@ -7,7 +7,7 @@ import { findProfanitySpans } from '../lib/profanity.js'
 //   - a notice appears under the field (role="alert") explaining what to do
 //
 //   mode="block" -> the words are not allowed (used for feedback); the notice says to rephrase
-//   mode="warn"  -> the words are allowed but flagged for staff (complaints, replies)
+//   mode="warn"  -> the words are allowed but flagged for staff (concerns, replies)
 //
 // The parent can listen with onFlag(hasProfanity) if it needs to react (e.g. disable a button).
 // Technique: a transparent "mirror" <div> with identical text metrics sits behind the real field;

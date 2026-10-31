@@ -7,7 +7,7 @@
 --   or lives in its own storage bucket (`gc-evidence`).
 -- • It NEVER drops, alters or reads any SCS table
 --   (profiles, folders, files, access_requests, ...).
--- • Idempotent: re-running it is safe and will NOT delete complaint data.
+-- • Idempotent: re-running it is safe and will NOT delete concern data.
 --   (Tables use "if not exists"; functions/policies are replaced.)
 --
 -- Run once: Supabase Dashboard > SQL Editor > paste this file > Run.
@@ -20,9 +20,9 @@ create extension if not exists pgcrypto with schema extensions;
 -- 1. TABLES
 -- ---------------------------------------------------------
 
--- Council staff who may sign in and handle complaints.
+-- Council staff who may sign in and handle concerns.
 -- Login accounts live in auth.users (shared with the SCS system);
--- this table decides who is allowed INTO the complaints system.
+-- this table decides who is allowed INTO the concerns system.
 create table if not exists public.gc_staff (
   user_id    uuid primary key references auth.users(id) on delete cascade,
   full_name  text not null,
@@ -35,7 +35,7 @@ create table if not exists public.gc_staff (
 
 -- Per-year counter for staff-facing reference numbers (GC-2026-0001).
 create table if not exists public.gc_ref_counters (
-  prefix   text not null default 'GC',           -- 'GC' complaints, 'FB' feedback
+  prefix   text not null default 'GC',           -- 'GC' concerns, 'FB' feedback
   year     int  not null,
   next_seq int  not null default 1,
   primary key (prefix, year)
@@ -44,8 +44,8 @@ create table if not exists public.gc_ref_counters (
 create table if not exists public.gc_complaints (
   id               uuid primary key default gen_random_uuid(),
   type             text not null default 'complaint' check (type in ('feedback','complaint')),
-  reference_no     text unique not null,          -- GC-2026-0001 (complaint) / FB-2026-0001 (feedback)
-  tracking_code    text unique,                   -- complaints only: complainant-facing secret, e.g. GC-3F9A-B27C-91D4 (feedback has none)
+  reference_no     text unique not null,          -- GC-2026-0001 (concern) / FB-2026-0001 (feedback)
+  tracking_code    text unique,                   -- concerns only: complainant-facing secret, e.g. GC-3F9A-B27C-91D4 (feedback has none)
 
   is_anonymous     boolean not null default false,
   complainant_name text,
@@ -60,7 +60,7 @@ create table if not exists public.gc_complaints (
   description      text not null check (char_length(description) between 10 and 5000),
   incident_date    date,
   incident_location text,
-  respondent       text,                          -- person / office / org the complaint is about
+  respondent       text,                          -- person / office / org the concern is about
   desired_outcome  text,
 
   status           text not null default 'received'
@@ -146,14 +146,14 @@ alter table public.gc_complaints drop constraint if exists gc_complaints_status_
 alter table public.gc_complaints add  constraint gc_complaints_status_check
   check (status in ('received','under_review','in_progress','escalated','resolved','closed','dismissed','forwarded','noted'));
 
--- Complaints and feedback have different life-cycles.
+-- Concerns and feedback have different life-cycles.
 alter table public.gc_complaints drop constraint if exists gc_complaints_type_status_check;
 alter table public.gc_complaints add  constraint gc_complaints_type_status_check check (
   (type = 'complaint' and status in ('received','under_review','in_progress','escalated','resolved','closed','dismissed'))
   or (type = 'feedback' and status in ('received','forwarded','noted')));
 
--- Complaints require identification. NOT VALID = enforced for new rows only,
--- so any anonymous complaints filed under the earlier version are left untouched.
+-- Concerns require identification. NOT VALID = enforced for new rows only,
+-- so any anonymous concerns filed under the earlier version are left untouched.
 alter table public.gc_complaints drop constraint if exists gc_complaints_identified_check;
 alter table public.gc_complaints add  constraint gc_complaints_identified_check
   check (type <> 'complaint' or is_anonymous = false) not valid;
@@ -227,7 +227,7 @@ begin
     end if;
   end if;
 
-  -- Any active staff member may assign a complaint/feedback to any other active staff member
+  -- Any active staff member may assign a concern/feedback to any other active staff member
   -- (a staff member can only be assigned if they are in gc_staff; the FK enforces this).
 
   return new;
@@ -325,14 +325,14 @@ create policy "gc staff: admin delete" on public.gc_staff for delete to authenti
 -- (inserts happen only through gc_add_staff())
 
 -- gc_complaints: staff read/update; admins delete. Inserts only via gc_submit_complaint().
-drop policy if exists "gc complaints: staff read"   on public.gc_complaints;
-drop policy if exists "gc complaints: staff update" on public.gc_complaints;
-drop policy if exists "gc complaints: admin delete" on public.gc_complaints;
-create policy "gc complaints: staff read" on public.gc_complaints for select to authenticated
+drop policy if exists "gc concerns: staff read"   on public.gc_complaints;
+drop policy if exists "gc concerns: staff update" on public.gc_complaints;
+drop policy if exists "gc concerns: admin delete" on public.gc_complaints;
+create policy "gc concerns: staff read" on public.gc_complaints for select to authenticated
   using (public.gc_is_staff());
-create policy "gc complaints: staff update" on public.gc_complaints for update to authenticated
+create policy "gc concerns: staff update" on public.gc_complaints for update to authenticated
   using (public.gc_is_staff()) with check (public.gc_is_staff());
-create policy "gc complaints: admin delete" on public.gc_complaints for delete to authenticated
+create policy "gc concerns: admin delete" on public.gc_complaints for delete to authenticated
   using (public.gc_is_admin());
 
 -- Staff can only change these columns (status, priority, assignment, outcome summary, feedback forwarding); identity/description/tracking fields are immutable.
@@ -368,7 +368,7 @@ grant execute on function public.gc_staff_name(uuid) to authenticated;
 --    validate everything in SQL, never expose the tables to anon.
 -- ---------------------------------------------------------
 
--- 5a. Submit a complaint. Returns the tracking code.
+-- 5a. Submit a concern. Returns the tracking code.
 create or replace function public.gc_submit_complaint(p jsonb)
 returns text language plpgsql security definer set search_path = public as $$
 declare
@@ -398,9 +398,9 @@ begin
   if char_length(v_desc) < 20 or char_length(v_desc) > 5000 then
     raise exception 'Description must be between 20 and 5000 characters.';
   end if;
-  -- Formal complaints are trackable and may need a Teams follow-up, so identification is mandatory.
+  -- Formal concerns are trackable and may need a Teams follow-up, so identification is mandatory.
   if v_anon then
-    raise exception 'Formal complaints require identification. To stay anonymous, submit Feedback instead.';
+    raise exception 'Formal concerns require identification. To stay anonymous, submit Feedback instead.';
   end if;
   if v_name is null then raise exception 'Please provide your full name.'; end if;
   if nullif(btrim(coalesce(p->>'student_id','')), '') is null then raise exception 'Please provide your student ID.'; end if;
@@ -445,7 +445,7 @@ begin
 
   insert into public.gc_updates (complaint_id, author_type, author_name, kind, message, is_public)
   values (v_id, 'system', 'System', 'submitted',
-          'Complaint received' || case when v_att_count > 0 then ' with ' || v_att_count || ' attachment(s)' else '' end || '.',
+          'Concern received' || case when v_att_count > 0 then ' with ' || v_att_count || ' attachment(s)' else '' end || '.',
           true);
 
   return v_code;
@@ -507,7 +507,7 @@ begin
   return v_ref;
 end $$;
 
--- 5b. Track a complaint by its secret code. Returns null if not found.
+-- 5b. Track a concern by its secret code. Returns null if not found.
 create or replace function public.gc_track_complaint(p_code text)
 returns jsonb language plpgsql stable security definer set search_path = public as $$
 declare
@@ -543,7 +543,7 @@ begin
   );
 end $$;
 
--- 5c. Complainant adds a follow-up message (reopens a resolved complaint).
+-- 5c. Complainant adds a follow-up message (reopens a resolved concern).
 create or replace function public.gc_add_followup(p_code text, p_message text)
 returns void language plpgsql security definer set search_path = public as $$
 declare
@@ -555,9 +555,9 @@ begin
   end if;
 
   select * into c from public.gc_complaints where tracking_code = upper(btrim(coalesce(p_code,'')));
-  if not found then raise exception 'Complaint not found.'; end if;
+  if not found then raise exception 'Concern not found.'; end if;
   if c.status in ('closed','dismissed') then
-    raise exception 'This complaint is closed. Please file a new complaint and reference %.', c.reference_no;
+    raise exception 'This concern is closed. Please file a new concern and reference %.', c.reference_no;
   end if;
 
   insert into public.gc_updates (complaint_id, author_type, author_name, kind, message, is_public)
@@ -579,12 +579,12 @@ begin
     raise exception 'Rating must be between 1 and 5.';
   end if;
   select * into c from public.gc_complaints where tracking_code = upper(btrim(coalesce(p_code,'')));
-  if not found then raise exception 'Complaint not found.'; end if;
+  if not found then raise exception 'Concern not found.'; end if;
   if c.status not in ('resolved','closed') then
-    raise exception 'You can rate the outcome once the complaint is resolved.';
+    raise exception 'You can rate the outcome once the concern is resolved.';
   end if;
   if c.satisfaction_rating is not null then
-    raise exception 'You have already submitted feedback for this complaint.';
+    raise exception 'You have already submitted feedback for this concern.';
   end if;
   update public.gc_complaints
      set satisfaction_rating = p_rating,
@@ -592,7 +592,7 @@ begin
    where id = c.id;
 end $$;
 
--- 5e. Admin-only: give an existing login account access to the complaints system.
+-- 5e. Admin-only: give an existing login account access to the concerns system.
 create or replace function public.gc_add_staff(p_email text, p_full_name text, p_position text, p_role text)
 returns void language plpgsql security definer set search_path = public as $$
 declare
@@ -686,7 +686,7 @@ begin
   if not public.gc_is_admin() then raise exception 'Only admins can reset passwords.'; end if;
   if char_length(coalesce(p_password, '')) < 8 then raise exception 'Password must be at least 8 characters.'; end if;
   if not exists (select 1 from public.gc_staff where user_id = p_user_id) then
-    raise exception 'That person is not on the complaints staff list.';
+    raise exception 'That person is not on the concerns staff list.';
   end if;
   update auth.users
      set encrypted_password = extensions.crypt(p_password, extensions.gen_salt('bf')), updated_at = now()
@@ -805,7 +805,7 @@ end $$;
 --   username ADMIN_COL  /  password COL2026-2027   (section 7 above).
 -- To add more people:
 --   • run seed_staff_from_scs.sql (copies the SCS admins
---     into gc_staff as complaint-system admins), OR
+--     into gc_staff as concern-system admins), OR
 --   • npm run create-staff  (creates a login + gc_staff row), OR
 --   • Manually, for an existing login:
 --       insert into public.gc_staff (user_id, full_name, email, position, role)

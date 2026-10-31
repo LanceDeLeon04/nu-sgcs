@@ -5,7 +5,7 @@
 --   • Every concern (Department > Unit > Concern) gets an editable
 --     "default priority": low / normal (shown as "Medium") / high / urgent.
 --     Admins change it in Offices & Concerns.
---   • When a student files a complaint/feedback, the new case is
+--   • When a student files a concern/feedback, the new case is
 --     automatically given the priority of the concern they picked
 --     (e.g. "ID concerns" -> Low, "Computer / laboratory concerns" -> Medium).
 --   • Staff can still override it with the Priority dropdown on the case.

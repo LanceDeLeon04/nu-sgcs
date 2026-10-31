@@ -1,5 +1,5 @@
 // Fire-and-forget helper for the /api/send-email serverless function (Brevo).
-// Never throws — a failed email should never block submitting a complaint,
+// Never throws — a failed email should never block submitting a concern,
 // changing a status, or posting a reply.
 export async function notifyByEmail(payload) {
   if (!payload || !payload.to) return

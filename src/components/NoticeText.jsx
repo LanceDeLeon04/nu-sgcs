@@ -1,7 +1,7 @@
 import React from 'react'
 import { FEEDBACK_NOTICE } from '../lib/constants.js'
 
-// Highlights the key phrase so students see why a formal complaint is the option that gets results.
+// Highlights the key phrase so students see why a formal concern is the option that gets results.
 export const KEY_PHRASE = 'actual resolutions and trackable actions'
 
 export function Highlight({ children = KEY_PHRASE }) {

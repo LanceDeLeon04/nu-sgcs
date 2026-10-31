@@ -6,7 +6,7 @@ export const COL_NAME = 'Council of Leaders'
 // and is managed by admins in the staff app (Offices & Concerns). Nothing to edit here.
 export const NOT_SURE = 'unsure' // the value of the "I'm not sure" option in the Department dropdown
 
-// "Department › Unit › Concern" for a complaint/feedback row. Older rows (filed before office routing)
+// "Department › Unit › Concern" for a concern/feedback row. Older rows (filed before office routing)
 // fall back to their old "Category › Sub-category".
 export const officeLabel = (c) => {
   if (c?.office_department) return [c.office_department, c.office_unit, c.office_concern].filter(Boolean).join(' › ')
@@ -21,15 +21,15 @@ export const isUnrouted = (c) => !!c && !c.office_department && !!c.office_unsur
 export const FEEDBACK_TYPES = ['Suggestion', 'Compliment / Commendation', 'Concern / Observation', 'Other']
 
 export const TYPES = {
-  complaint: { label: 'Complaint', cls: 'bg-nublue-600 text-white border-nublue-600' },
+  complaint: { label: 'Concern', cls: 'bg-nublue-600 text-white border-nublue-600' },
   feedback:  { label: 'Feedback',  cls: 'bg-nugold-100 text-nugold-700 border-nugold-300' },
 }
 
 // Wording shown to students on the public site
 export const FEEDBACK_NOTICE =
-  'Feedback is for filing and reporting only. It will be forwarded to the concerned offices, but it does not receive a resolution or trackable actions. If you want actual resolutions and trackable actions, please file a formal complaint instead.'
-export const COMPLAINT_NOTICE =
-  'A representative may contact you via Microsoft Teams to confirm the details of your report. Formal complaints are trackable: you will receive a tracking code to follow every action taken.'
+  'Feedback is for filing and reporting only. It will be forwarded to the concerned offices, but it does not receive a resolution or trackable actions. If you want actual resolutions and trackable actions, please file a formal concern instead.'
+export const CONCERN_NOTICE =
+  'A representative may contact you via Microsoft Teams to confirm the details of your report. Formal concerns are trackable: you will receive a tracking code to follow every action taken.'
 
 export const YEAR_LEVELS = ['1st Year', '2nd Year', '3rd Year', '4th Year', '5th Year', 'Graduate']
 
@@ -108,7 +108,7 @@ export const STATUSES = {
   noted:        { label: 'Noted',        cls: 'bg-slate-100 text-slate-600 border-slate-200',   step: 2 },
 }
 export const STATUS_KEYS = Object.keys(STATUSES)
-export const COMPLAINT_STATUS_KEYS = ['received', 'under_review', 'in_progress', 'escalated', 'resolved', 'closed', 'dismissed']
+export const CONCERN_STATUS_KEYS = ['received', 'under_review', 'in_progress', 'escalated', 'resolved', 'closed', 'dismissed']
 export const FEEDBACK_STATUS_KEYS = ['received', 'forwarded', 'noted']
 export const OPEN_STATUSES = ['received', 'under_review', 'in_progress', 'escalated']
 
@@ -119,7 +119,7 @@ export const PRIORITIES = {
   urgent: { label: 'Urgent', cls: 'bg-red-50 text-red-600 border-red-200' },
 }
 
-// Open complaints older than this many days are flagged "Overdue" for staff.
+// Open concerns older than this many days are flagged "Overdue" for staff.
 export const OVERDUE_DAYS = 7
 
 export const fmtDate = (d) =>

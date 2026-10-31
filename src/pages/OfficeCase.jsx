@@ -132,7 +132,7 @@ export default function OfficeCase() {
   return (
     <PublicShell>
       <div className="max-w-2xl mx-auto py-10 px-4">
-        <p className="text-xs font-bold text-nublue-600 uppercase tracking-wide">{c.reference_no} · {c.type === 'feedback' ? 'Feedback' : 'Complaint'}</p>
+        <p className="text-xs font-bold text-nublue-600 uppercase tracking-wide">{c.reference_no} · {c.type === 'feedback' ? 'Feedback' : 'Concern'}</p>
         <h1 className="text-xl font-bold text-slate-800 mt-1">{c.subject}</h1>
         <p className="text-xs text-slate-500 mt-1">
           {[c.department, c.unit, c.concern].filter(Boolean).join(' › ')} · Submitted {fmtDateTime(c.submitted_at)}

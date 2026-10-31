@@ -50,7 +50,7 @@ export async function runDiagnostics() {
   const { error } = await supabase.rpc('gc_track_complaint', { p_code: 'GC-0000-0000-0000' })
   out.push({
     ok: !error,
-    label: 'Complaints database installed (schema.sql)',
+    label: 'Concerns database installed (schema.sql)',
     detail: error ? `${error.message} — run schema.sql in the Supabase SQL Editor.` : 'Yes',
   })
   return out

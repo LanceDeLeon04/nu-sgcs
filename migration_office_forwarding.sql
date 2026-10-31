@@ -72,7 +72,7 @@ returns text language sql volatile as $$
   select lpad((floor(random() * 10000))::int::text, 4, '0')
 $$;
 
--- Looks a case up by tracking_code (complaints) OR reference_no (complaints & feedback).
+-- Looks a case up by tracking_code (concerns) OR reference_no (concerns & feedback).
 create or replace function public.gc_find_complaint_by_ref(p_ref text)
 returns public.gc_complaints language sql stable security definer set search_path = public as $$
   select * from public.gc_complaints
@@ -83,7 +83,7 @@ $$;
 revoke all on function public.gc_find_complaint_by_ref(text) from public, anon, authenticated;
 
 -- ---------------------------------------------------------
--- 4. Auto-forward: called right after a complaint/feedback is submitted,
+-- 4. Auto-forward: called right after a concern/feedback is submitted,
 --    and again after it is reassigned to a different office.
 --    If the routed unit already has an email on file, this sends it
 --    automatically — the caller just needs to email the result if

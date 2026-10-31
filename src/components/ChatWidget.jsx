@@ -189,7 +189,7 @@ export default function ChatWidget() {
                 {results !== null && results.length === 0 && (
                   <div className="bg-white border border-slate-100 rounded-xl px-3 py-3 text-sm text-slate-500">
                     No matching text found for "<span className="font-medium">{query}</span>" anywhere in the handbook.
-                    Try different keywords, or use <span className="font-semibold text-nublue-600">Give Feedback</span> / <span className="font-semibold text-nublue-600">File a Complaint</span> to ask the Council directly.
+                    Try different keywords, or use <span className="font-semibold text-nublue-600">Give Feedback</span> / <span className="font-semibold text-nublue-600">File a Concern</span> to ask the Council directly.
                   </div>
                 )}
 
@@ -225,7 +225,7 @@ export default function ChatWidget() {
           </div>
 
           <p className="px-3 py-2 text-[9px] text-slate-400 text-center bg-white border-t border-slate-100 shrink-0">
-            Shows handbook text directly — not a generated answer. For a specific case, use File a Complaint / Give Feedback.
+            Shows handbook text directly — not a generated answer. For a specific case, use File a Concern / Give Feedback.
           </p>
         </div>
       )}

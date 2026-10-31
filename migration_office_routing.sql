@@ -46,7 +46,7 @@ create table if not exists public.gc_concerns (
 create unique index if not exists gc_concerns_name_uq on public.gc_concerns (unit_id, lower(name));
 
 -- ---------------------------------------------------------
--- 2. Complaint columns
+-- 2. Concern columns
 --    ids  = live link to the directory (set null if an item is deleted)
 --    text = readable copy, kept in sync when an item is renamed (section 4)
 -- ---------------------------------------------------------
@@ -114,7 +114,7 @@ create or replace function public.gc_complaints_before_update()
 returns trigger language plpgsql security definer set search_path = public as $$
 begin
   -- pg_trigger_depth() > 1 means this update was caused by another trigger
-  -- (a directory rename), not by a person handling the complaint.
+  -- (a directory rename), not by a person handling the concern.
   if pg_trigger_depth() <= 1 then
     new.updated_at := now();
   end if;
@@ -186,11 +186,11 @@ $$;
 grant execute on function public.gc_get_directory() to anon, authenticated;
 
 -- ---------------------------------------------------------
--- 6. Submit complaint: Department > Unit > Concern
+-- 6. Submit concern: Department > Unit > Concern
 --    payload: concern_id (uuid)  -> unit and department are derived from it
 --             office_unsure (bool) -> student picked "I'm not sure"
 --    If the student is unsure AND found no matching concern, concern_id may be empty:
---    the complaint is saved as "Not yet routed" for an admin to route.
+--    the concern is saved as "Not yet routed" for an admin to route.
 -- ---------------------------------------------------------
 create or replace function public.gc_submit_complaint(p jsonb)
 returns text language plpgsql security definer set search_path = public as $$
@@ -230,7 +230,7 @@ begin
     raise exception 'Description must be between 20 and 5000 characters.';
   end if;
   if v_anon then
-    raise exception 'Formal complaints require identification. To stay anonymous, submit Feedback instead.';
+    raise exception 'Formal concerns require identification. To stay anonymous, submit Feedback instead.';
   end if;
   if v_name is null then raise exception 'Please provide your full name.'; end if;
   if v_student !~ '^20[0-9]{2}-[0-9]{6,7}$' then
@@ -279,7 +279,7 @@ begin
 
   insert into public.gc_updates (complaint_id, author_type, author_name, kind, message, is_public)
   values (v_id, 'system', 'System', 'submitted',
-          'Complaint received' || case when v_att_count > 0 then ' with ' || v_att_count || ' attachment(s)' else '' end
+          'Concern received' || case when v_att_count > 0 then ' with ' || v_att_count || ' attachment(s)' else '' end
           || case when v_dname is not null then ' and sent to ' || v_dname || ' › ' || v_uname || '.' else '. It will be routed to the right office by the Council.' end,
           true);
 
@@ -572,7 +572,7 @@ declare
    {
     "n": "Quality Management Office",
     "c": [
-     "Service quality complaint",
+     "Service quality concern",
      "Policy / process improvement",
      "Other concern"
     ]

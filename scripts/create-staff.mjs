@@ -1,5 +1,5 @@
 // =========================================================
-// Create a login + complaints-system staff record in one step.
+// Create a login + concerns-system staff record in one step.
 //
 //   npm run create-staff -- <email> <password> "<Full Name>" "<Position>" [admin|handler]
 //
@@ -67,4 +67,4 @@ const { error } = await supabase.from('gc_staff').upsert({
   user_id: user.id, full_name: fullName, email: email.toLowerCase(), position, role, is_active: true,
 })
 if (error) { console.error('❌ Could not create gc_staff record (did you run schema.sql?):', error.message); process.exit(1) }
-console.log(`✅ ${fullName} can now sign in to the complaints system as ${role}.`)
+console.log(`✅ ${fullName} can now sign in to the concerns system as ${role}.`)

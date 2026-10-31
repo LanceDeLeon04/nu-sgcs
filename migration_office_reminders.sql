@@ -3,16 +3,16 @@
 --   OFFICE STATUS ON ALL CASES + AUTO-REMINDERS + AUTO-CLOSE
 --
 --   1. Offices can now change the status of ANY case forwarded to them
---      (previously only confidential complaints) — feedback gets its own
---      status set (forwarded/noted), complaints get the usual set
+--      (previously only confidential concerns) — feedback gets its own
+--      status set (forwarded/noted), concerns get the usual set
 --      (under_review/in_progress/resolved/closed).
 --   2. Two columns track office activity so a scheduled job
 --      (api/cron-followups.js, run by Vercel Cron — see vercel.json) can:
 --        - email the office a reminder every 3 days it hasn't posted an
 --          update or changed the status, repeating until the case reaches
---          a terminal status (resolved/closed/dismissed for complaints,
+--          a terminal status (resolved/closed/dismissed for concerns,
 --          noted for feedback);
---        - auto-close a complaint that has sat at "resolved" for 3 days
+--        - auto-close a concern that has sat at "resolved" for 3 days
 --          with no follow-up from the complainant (a follow-up already
 --          flips it back to under_review via gc_add_followup, so "still
 --          resolved after 3 days" reliably means no one followed up).
@@ -80,7 +80,7 @@ grant execute on function public.gc_office_submit_update(text, text, text) to an
 
 -- ---------------------------------------------------------
 -- 4. Office updates the status of ANY case forwarded to it (no longer
---    limited to confidential complaints). Also stamps office activity.
+--    limited to confidential concerns). Also stamps office activity.
 -- ---------------------------------------------------------
 create or replace function public.gc_office_update_status(p_ref text, p_code text, p_status text)
 returns jsonb language plpgsql security definer set search_path = public as $$

@@ -68,7 +68,7 @@ export default function StaffLogin() {
             </div>
 
             <p className="relative text-[11px] text-white/70 leading-snug mb-3">
-              Sign in to review, respond to and resolve student complaints.
+              Sign in to review, respond to and resolve student concerns.
             </p>
 
             <form onSubmit={handleSubmit} className="relative space-y-2.5">

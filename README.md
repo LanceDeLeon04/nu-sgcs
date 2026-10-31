@@ -1,36 +1,36 @@
 # NUplift: Campus Feedback and Action Portal
 
-An independent complaints system built on the SCS File Repository's stack and look
+An independent concerns system built on the SCS File Repository's stack and look
 (React + Vite + Tailwind + Supabase, NU Blue / NU Gold). It uses the **same Supabase project**
 as the SCS system but its **own separate tables** — everything is prefixed `gc_`, plus one private
 storage bucket, `gc-evidence`. It never reads or changes any SCS table.
 
 ## Two kinds of submission
 
-| | **Feedback** | **Formal Complaint** |
+| | **Feedback** | **Formal Concern** |
 |---|---|---|
 | Identity | **Anonymous option** (name/email optional) | **Required** — full name, student ID, NU email |
 | Purpose | Filing and reporting only; forwarded to the concerned office(s) | Actual resolution and trackable actions |
 | Tracking | None (sender gets a reference like `FB-2026-0001` for their records) | Private tracking code (`GC-XXXX-XXXX-XXXX`), status page, replies, follow-ups, rating |
 | Evidence files | No | Up to 3 |
 | Staff workflow | Received → Forwarded (to an office) → Noted | Received → Under Review → In Progress / Escalated → Resolved → Closed (or Dismissed) |
-| Notice shown | "Feedback is for filing and reporting only… forwarded to the concerned offices… for actual resolutions and trackable actions, use a formal complaint." | "A representative may contact you via Microsoft Teams to confirm the details of your report. Complaints are trackable." |
+| Notice shown | "Feedback is for filing and reporting only… forwarded to the concerned offices… for actual resolutions and trackable actions, use a formal concern." | "A representative may contact you via Microsoft Teams to confirm the details of your report. Concerns are trackable." |
 
-Both live in the same `gc_complaints` table (`type` = `feedback` | `complaint`); rules are enforced in the database,
-not just the UI (anonymous complaints are rejected server-side; a complaint can't take a feedback status and vice versa).
+Both live in the same `gc_complaints` table (`type` = `feedback` | `concern`); rules are enforced in the database,
+not just the UI (anonymous concerns are rejected server-side; a concern can't take a feedback status and vice versa).
 
 ## Office self-service + automatic follow-ups
 
 Once a case is forwarded, the concerned office's secure link (`/office/:ref`, 4-digit code) lets it both post
-updates **and change the status itself** (complaints: Under Review / In Progress / Resolved / Closed; feedback:
+updates **and change the status itself** (concerns: Under Review / In Progress / Resolved / Closed; feedback:
 Forwarded / Noted) — the Council no longer has to relay status changes on the office's behalf.
 
 A daily scheduled job (`api/cron-followups.js`, run by Vercel Cron — see `vercel.json`) then keeps things moving
 without anyone watching the queue:
 - **Reminders** — if a forwarded case sees no office activity (no update posted, no status change) for 3 days,
   the office gets an emailed reminder with its secure link. This repeats every 3 days until the case reaches a
-  terminal status (resolved/closed/dismissed for complaints, noted for feedback).
-- **Auto-close** — a complaint left at "Resolved" for 3 days with no follow-up from the complainant is
+  terminal status (resolved/closed/dismissed for concerns, noted for feedback).
+- **Auto-close** — a concern left at "Resolved" for 3 days with no follow-up from the complainant is
   automatically moved to "Closed" (a follow-up reopens it to "Under Review" immediately, so this only fires
   when nobody responded).
 
@@ -41,19 +41,19 @@ Needs `SUPABASE_SERVICE_ROLE_KEY` and `CRON_SECRET` set in Vercel's Environment 
 
 **Public (no account):**
 - `/` landing page · `/submit` chooser · `/submit/feedback` · `/submit/complaint`
-- `/track` look up a *complaint* with its private tracking code → status, progress, council replies,
-  send follow-ups, rate the outcome. Follow-up on a *resolved* complaint reopens it.
+- `/track` look up a *concern* with its private tracking code → status, progress, council replies,
+  send follow-ups, rate the outcome. Follow-up on a *resolved* concern reopens it.
 
 **Staff (sign in at `/staff/login`):**
-- Dashboard (complaints: new / active / overdue / resolved; feedback waiting to be forwarded; by status and category; satisfaction score)
-- **Complaints & Feedback** list with type tabs + search + filters (status, category, priority, assignee)
-- Complaint detail: change status/priority, assign, write the outcome summary, reply publicly or leave
+- Dashboard (concerns: new / active / overdue / resolved; feedback waiting to be forwarded; by status and category; satisfaction score)
+- **Concerns & Feedback** list with type tabs + search + filters (status, category, priority, assignee)
+- Concern detail: change status/priority, assign, write the outcome summary, reply publicly or leave
   internal notes, open evidence via short-lived signed links, "Open in Microsoft Teams" for the complainant, full audit timeline
 - Feedback detail: record which office it was forwarded to (auto-marks it *Forwarded*), internal notes, assign
 - Assign any item to a specific staff member ("Assign to me" shortcut; filter the list by assignee); admins also manage staff, delete, see tracking codes
 
 **Concern priority:** each concern in *Offices & Concerns* has a default priority dropdown (Low / Medium / High / Urgent).
-New complaints take the priority of the concern the student picked (e.g. ID concerns → Low, Computer concerns → Medium) and staff can
+New concerns take the priority of the concern the student picked (e.g. ID concerns → Low, Computer concerns → Medium) and staff can
 still override it on the case. See `migration_concern_priority.sql` (it also tags all existing concerns once).
 
 **Director escalation & business-day reminders:** (`migration_escalation_reminders.sql`)
@@ -65,11 +65,11 @@ still override it on the case. See `migration_concern_priority.sql` (it also tag
 - After **2 consecutive reminders** with no action (and one more business day), the case is escalated to the director: "no action from the office for 1 week".
   The tuning knobs are constants at the top of `api/cron-followups.js`.
 
-**Roles:** `admin` and `handler`. Any staff member can assign a complaint or feedback item to any active staff member (or take it themselves);
+**Roles:** `admin` and `handler`. Any staff member can assign a concern or feedback item to any active staff member (or take it themselves);
 admins additionally delete items and manage staff. Being signed in is not enough — an active row in `gc_staff` is required.
 
 **Upgrading an existing install:** just re-run the new `schema.sql`. It contains an in-place migration
-(adds the feedback type, statuses and `forwarded_to`; keeps all existing data; anonymous complaints filed
+(adds the feedback type, statuses and `forwarded_to`; keeps all existing data; anonymous concerns filed
 before this version are left untouched).
 
 ## Setup (new, separate Supabase project)
@@ -108,7 +108,7 @@ before this version are left untouched).
      under *SMTP & API*, and verify a sender email under *Senders*. Add `BREVO_API_KEY`,
      `BREVO_SENDER_EMAIL`, and `BREVO_SENDER_NAME` to Vercel's Environment Variables (see
      `.env.example`) and redeploy. Feedback (which can be anonymous) never gets emailed — only
-     formal complaints, since they require an NU email address.
+     formal concerns, since they require an NU email address.
 7. Add more staff under **Manage Staff → Create account**: type a username (or email), name, role and a password (or click Generate).
    The login is created for you — no dashboard or scripts needed. Admins can also reset a staff member's password there.
 
@@ -120,7 +120,7 @@ and use `seed_staff_from_scs.sql` for step 4.
 | Table | Purpose |
 |---|---|
 | `gc_staff` | Who may use the staff side (links to `auth.users`), role + active flag |
-| `gc_complaints` | The complaints (identity fields are null for anonymous ones) |
+| `gc_complaints` | The concerns (identity fields are null for anonymous ones) |
 | `gc_updates` | Timeline/audit: status changes, assignments, replies, internal notes, follow-ups |
 | `gc_attachments` | Evidence file metadata (files live in the private `gc-evidence` bucket) |
 | `gc_ref_counters` | Per-year counter for staff reference numbers (`GC-2026-0001`) |
@@ -130,16 +130,16 @@ and use `seed_staff_from_scs.sql` for step 4.
 - The anonymous site has **no direct table access**. It uses `SECURITY DEFINER` RPCs
   (`gc_submit_complaint`, `gc_track_complaint`, `gc_add_followup`, `gc_rate_resolution`) that validate
   input in SQL — the same pattern as the SCS public submission forms.
-- Tracking codes (`GC-XXXX-XXXX-XXXX`, 48 random bits) are the only key to a complaint. The tracking page
+- Tracking codes (`GC-XXXX-XXXX-XXXX`, 48 random bits) are the only key to a concern. The tracking page
   never reveals internal notes, staff names or identity fields.
-- Anonymous feedback stores **no** name/email/ID, enforced server-side. Formal complaints cannot be anonymous.
+- Anonymous feedback stores **no** name/email/ID, enforced server-side. Formal concerns cannot be anonymous.
 - Staff can change only `status`, `priority`, `assigned_to` and `resolution_summary` (column-level grant);
   everything else is immutable. Every change is logged automatically by triggers.
 - Evidence bucket: private, 5 MB, JPG/PNG/WebP/PDF only; anyone may upload under `submissions/`, only
   active staff can read.
 - Spam protection is basic (honeypot + server validation). If abuse appears, add Cloudflare Turnstile
   or a rate limit at the edge.
-- Conflict of interest: all staff can see all complaints, including ones about council officers. Keep
+- Conflict of interest: all staff can see all concerns, including ones about council officers. Keep
   the handler list small and use "Person / office concerned" to route sensitive cases to an admin.
 - The SCS login page has a hard-coded bypass account in `src/lib/auth.jsx`. It was **not** copied here.
 
@@ -183,7 +183,7 @@ on any outside service.
 
 ## Office routing (Department › Unit › Concern)
 
-The submission form routes each complaint/feedback to a **Department › Unit › Concern**, e.g.
+The submission form routes each concern/feedback to a **Department › Unit › Concern**, e.g.
 `Administration/Executive › IT Services Office › Email concerns`. Students can also pick
 **"I'm not sure"**, which shows a live search box over every concern in every department; if
 they still don't find a match, the submission is saved as **Not yet routed** for an admin to sort.
@@ -197,14 +197,14 @@ they still don't find a match, the submission is saved as **Not yet routed** for
   automatically; hiding removes it from the student form without touching past submissions.
 - **Fix a wrong office** — open any submission → Admin panel → *Wrong office? Change it* (or
   *Route this to an office* for an unrouted one). Pick the correct Department › Unit › Concern and
-  save; the student is notified by email (and sees it on their tracking page, for complaints).
+  save; the student is notified by email (and sees it on their tracking page, for concerns).
 
 ## Full report details on forwarding
 
 The forwarding email (and the office's secure `/office/:ref` portal) include the **complete report**:
 department › unit › concern, incident date/location, "concerned person/office", desired outcome, and
 the **reporting student's identity** (name, student ID, NU email, contact no., program, year level).
-Anonymous feedback still shows "Filed anonymously — no identity on file" instead — formal complaints
+Anonymous feedback still shows "Filed anonymously — no identity on file" instead — formal concerns
 are never anonymous, so their reporter's identity is always included.
 
 - **Run once** (after `migration_office_forwarding.sql`): SQL Editor → paste
@@ -239,7 +239,7 @@ Every department **must** have a director email.
 - **Weekly summary, not per-case** — the director is *not* copied on individual concerns. Every
   **Friday 5:00 PM (PH)** (`/api/cron-weekly-digest`, schedule in `vercel.json`, UTC) each director
   gets one summary email of that department's concerns from the past 7 days: counts by status, a
-  list (reference no., type, status, subject, unit › concern), and how many older complaints are
+  list (reference no., type, status, subject, unit › concern), and how many older concerns are
   still open. Departments with no new concerns that week get nothing. Confidential cases are listed
   without details and reporter identities are never included. A `gc_digest_log` row prevents a
   retried cron from sending the same week twice.
@@ -257,9 +257,9 @@ Every department **must** have a director email.
 - **Preview without sending:** open `/api/cron-weekly-digest?dry=1` (with the `CRON_SECRET` bearer
   header if set) to see which directors would be emailed.
 
-## Confidential complaints
+## Confidential concerns
 
-Students filing a formal Complaint can check **"Mark as Confidential"**. When checked:
+Students filing a formal Concern can check **"Mark as Confidential"**. When checked:
 
 - Non-admin Council staff still see the case in their list/dashboard (reference no., status,
   priority, routing, dates) but the subject, description, identity, evidence, and timeline are
@@ -270,18 +270,18 @@ Students filing a formal Complaint can check **"Mark as Confidential"**. When ch
   only Council staff can change status, but a confidential case has no staff handler who can see it
   to do that.
 
-Non-confidential complaints and all feedback are unaffected.
+Non-confidential concerns and all feedback are unaffected.
 
 - **Run once** (after `migration_office_redirect_request.sql`): SQL Editor → paste
   `migration_confidential_complaints.sql` → Run. Safe to re-run. It adds the `is_confidential`
-  column, a redacted `gc_staff_complaints` view (used by the staff Dashboard/Complaints/Detail
+  column, a redacted `gc_staff_complaints` view (used by the staff Dashboard/Concerns/Detail
   pages instead of the raw table), tightens RLS on `gc_complaints` / `gc_updates` /
   `gc_attachments` / evidence storage so non-admin staff can't read a confidential case's content
   directly, and adds the `gc_office_update_status` RPC for the office portal.
 
-## Evidence required on complaints
+## Evidence required on concerns
 
-Formal complaints now require **at least one evidence attachment** (1–3 files: JPG, PNG, WebP or
+Formal concerns now require **at least one evidence attachment** (1–3 files: JPG, PNG, WebP or
 PDF, 5 MB each). Feedback is unaffected — attachments there remain unavailable/optional as before.
 Both the submission form and `gc_submit_complaint()` enforce this, so it can't be bypassed by
 calling the RPC directly.
@@ -304,7 +304,7 @@ Settings, and Manage Staff via short-lived signed URLs. It is never shown on the
 ## Customizing
 
 - Categories: `src/lib/constants.js` **and** the `v_categories` array in `gc_submit_complaint()` / `gc_submit_feedback()` (keep in sync).
-- Notice wording shown to students: `FEEDBACK_NOTICE` and `COMPLAINT_NOTICE` in `src/lib/constants.js`.
+- Notice wording shown to students: `FEEDBACK_NOTICE` and `CONCERN_NOTICE` in `src/lib/constants.js`.
 - "Overdue" threshold: `OVERDUE_DAYS` in `src/lib/constants.js`.
 - Branding files in `public/`: `NUpliftLogo.png` (header, sidebar) (white-outlined, transparent; used on the dark landing and login cards too), `COLLogo.png` (credit footer, beside the SCS logo), `SCSLogo.png` (credit footer), `favicon.png`, `LogInBG.png`. Replace them using the same filenames.
 - Footer text lives in `src/components/Footer.jsx`.
@@ -312,4 +312,4 @@ Settings, and Manage Staff via short-lived signed URLs. It is never shown on the
 
 ## Unit codes and case numbers
 
-Run `migration_unit_codes.sql` (after `migration_evidence_required.sql`). Every unit has an editable code (Offices & Concerns > open a unit > Unit code). New cases are numbered `GC-<UNIT>-0001` (complaints) and `FB-<UNIT>-0001` (feedback), e.g. `GC-ACCT-0001`. Unrouted cases use `UNR`. Old cases keep their old numbers. The private `GC-XXXX-XXXX-XXXX` tracking code is unchanged and is still what the public /track page uses.
+Run `migration_unit_codes.sql` (after `migration_evidence_required.sql`). Every unit has an editable code (Offices & Concerns > open a unit > Unit code). New cases are numbered `GC-<UNIT>-0001` (concerns) and `FB-<UNIT>-0001` (feedback), e.g. `GC-ACCT-0001`. Unrouted cases use `UNR`. Old cases keep their old numbers. The private `GC-XXXX-XXXX-XXXX` tracking code is unchanged and is still what the public /track page uses.

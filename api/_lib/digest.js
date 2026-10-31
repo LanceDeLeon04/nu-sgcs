@@ -64,7 +64,7 @@ export async function sendDirectorDigests(opts) {
     const statusCounts = Object.entries(counts).map(([k, v]) => ({ label: STATUS_LABELS[k] || k, count: v }))
     const items = rows.slice(0, MAX_LISTED).map((r) => ({
       referenceNo: r.reference_no,
-      typeLabel: r.type === 'feedback' ? 'Feedback' : 'Complaint',
+      typeLabel: r.type === 'feedback' ? 'Feedback' : 'Concern',
       statusLabel: STATUS_LABELS[r.status] || r.status,
       subject: r.is_confidential ? 'Confidential \u2014 details restricted' : r.subject,
       office: r.is_confidential ? '' : [r.office_unit, r.office_concern].filter(Boolean).join(' \u203a '),

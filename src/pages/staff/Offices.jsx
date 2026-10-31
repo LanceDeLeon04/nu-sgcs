@@ -30,7 +30,7 @@ function UnitCode({ unit, onSave, busy }) {
             <Check size={13} /> Save code
           </button>
         )}
-        <span className="text-[11px] text-slate-500">Complaints: <span className="font-mono">GC-{t || 'CODE'}-0001</span> · Feedback: <span className="font-mono">FB-{t || 'CODE'}-0001</span></span>
+        <span className="text-[11px] text-slate-500">Concerns: <span className="font-mono">GC-{t || 'CODE'}-0001</span> · Feedback: <span className="font-mono">FB-{t || 'CODE'}-0001</span></span>
       </div>
       {t && invalid && <p className="text-[10px] text-red-500 mt-0.5">{t === 'UNR' ? 'UNR is reserved for unrouted cases.' : '2 to 8 letters or digits.'}</p>}
       <p className="text-[10px] text-slate-400 mt-1">Changing the code only affects new cases. Existing case numbers stay as issued.</p>
@@ -333,7 +333,7 @@ export default function Offices() {
           Hiding an item (the eye icon) removes it from the form without deleting past submissions that used it.
         </p>
         <p className="text-sm text-slate-500 mb-5">
-          The colored dropdown beside each concern is its <b>default priority</b>. New complaints automatically get the priority of the concern the student picked
+          The colored dropdown beside each concern is its <b>default priority</b>. New concerns automatically get the priority of the concern the student picked
           (e.g. ID concerns → Low, Computer concerns → Medium). Staff can still change it on the case; changing a default here only affects new cases.
         </p>
         <p className="text-sm text-slate-500 mb-5">

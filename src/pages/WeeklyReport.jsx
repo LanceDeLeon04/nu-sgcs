@@ -62,15 +62,15 @@ export default function WeeklyReport() {
                 <p className="text-sm text-slate-500">{data.periodLabel} · statuses shown are current</p>
               </div>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                <Stat icon={Inbox} label={`New this ${per}`} value={t.total} hint={`${t.complaints} complaints · ${t.feedback} feedback`} />
-                <Stat icon={Hourglass} label="Still open" value={t.stillOpen} hint={`of this ${per}'s complaints`} />
-                <Stat icon={CheckCircle2} label="Resolved / closed" value={t.resolved} hint={`of this ${per}'s complaints`} />
+                <Stat icon={Inbox} label={`New this ${per}`} value={t.total} hint={`${t.concerns} concerns · ${t.feedback} feedback`} />
+                <Stat icon={Hourglass} label="Still open" value={t.stillOpen} hint={`of this ${per}'s concerns`} />
+                <Stat icon={CheckCircle2} label="Resolved / closed" value={t.resolved} hint={`of this ${per}'s concerns`} />
                 <Stat icon={History} label="Older open" value={t.olderOpen} hint={t.olderOpen ? `oldest ${t.oldestOpenDays} days` : 'none from earlier weeks'} />
               </div>
               <div className="grid lg:grid-cols-2 gap-5">
-                <Card title={`Volume — last ${data.trend.length} weeks`} sub="Complaints vs feedback routed to this department"><SubmissionTrendChart data={data.trend} /></Card>
+                <Card title={`Volume — last ${data.trend.length} weeks`} sub="Concerns vs feedback routed to this department"><SubmissionTrendChart data={data.trend} /></Card>
                 <Card title="Status breakdown" sub={`This ${per}'s concerns`}><StatusDonutChart data={statusData} total={t.total} /></Card>
-                <Card title="Open complaints by priority" sub={`This ${per}'s still-open complaints`}><PriorityBarChart data={prioData} /></Card>
+                <Card title="Open concerns by priority" sub={`This ${per}'s still-open concerns`}><PriorityBarChart data={prioData} /></Card>
                 <Card title="Concerns by unit" sub={`Top units this ${per} (confidential cases excluded)`}><StaffWorkloadChart data={data.units} /></Card>
               </div>
               <Card title={`Concerns this ${per} (${t.total})`}>
@@ -79,7 +79,7 @@ export default function WeeklyReport() {
                     {data.items.map((i) => (
                       <li key={i.referenceNo} className="py-2.5 flex items-start justify-between gap-3">
                         <div className="min-w-0">
-                          <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">{i.referenceNo} · {i.type === 'feedback' ? 'Feedback' : 'Complaint'} · {fmtDate(i.submittedAt)}</p>
+                          <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">{i.referenceNo} · {i.type === 'feedback' ? 'Feedback' : 'Concern'} · {fmtDate(i.submittedAt)}</p>
                           <p className="text-sm font-semibold text-slate-700 truncate">{i.subject}</p>
                           {i.office && <p className="text-xs text-slate-400">{i.office}</p>}
                         </div>

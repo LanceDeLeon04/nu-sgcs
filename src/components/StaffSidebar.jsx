@@ -22,7 +22,7 @@ export default function StaffSidebar() {
 
       <nav className="flex-1 px-3 py-5 space-y-1.5">
         <NavLink to="/staff" end className={cls}><LayoutGrid size={18} /> Dashboard</NavLink>
-        <NavLink to="/staff/complaints" className={cls}><Inbox size={18} /> Complaints &amp; Feedback</NavLink>
+        <NavLink to="/staff/concerns" className={cls}><Inbox size={18} /> Concerns &amp; Feedback</NavLink>
         {isAdmin && <NavLink to="/staff/team" className={cls}><Users size={18} /> Manage Staff</NavLink>}
         {isAdmin && <NavLink to="/staff/offices" className={cls}><Building2 size={18} /> Offices &amp; Concerns</NavLink>}
         {isAdmin && <NavLink to="/staff/reports" className={cls}><BarChart3 size={18} /> Weekly Reports</NavLink>}

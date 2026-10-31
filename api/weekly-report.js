@@ -47,12 +47,12 @@ export default async function handler(req, res) {
     // 8-week trend (oldest -> newest), weeks end on the digest day
     const trend = Array.from({ length: WEEKS }, (_, i) => {
       const wEnd = end - (WEEKS - 1 - i) * 7 * DAY_MS
-      return { label: fmtShort(wEnd), from: wEnd - 7 * DAY_MS, to: wEnd, complaints: 0, feedback: 0 }
+      return { label: fmtShort(wEnd), from: wEnd - 7 * DAY_MS, to: wEnd, concerns: 0, feedback: 0 }
     })
     for (const r of all) {
       const t = new Date(r.submitted_at).getTime()
       const b = trend.find((w) => t > w.from && t <= w.to)
-      if (b) b[r.type === 'feedback' ? 'feedback' : 'complaints']++
+      if (b) b[r.type === 'feedback' ? 'feedback' : 'concerns']++
     }
 
     const tally = (list, f) => { const m = {}; for (const r of list) { const k = f(r); if (k) m[k] = (m[k] || 0) + 1 } return m }
@@ -62,8 +62,8 @@ export default async function handler(req, res) {
     const units = Object.entries(tally(week.filter((r) => !r.is_confidential), (r) => r.office_unit))
       .map(([label, value]) => ({ label, value })).sort((a, b) => b.value - a.value).slice(0, 8)
 
-    const complaints = week.filter((r) => r.type !== 'feedback')
-    const resolved = complaints.filter((r) => ['resolved', 'closed'].includes(r.status)).length
+    const concerns = week.filter((r) => r.type !== 'feedback')
+    const resolved = concerns.filter((r) => ['resolved', 'closed'].includes(r.status)).length
     const olderOpenAges = (older || []).map((r) => Math.floor((end - new Date(r.submitted_at).getTime()) / DAY_MS))
 
     return res.status(200).json({
@@ -72,13 +72,13 @@ export default async function handler(req, res) {
       rangeDays,
       generatedFor: phDay(end),
       totals: {
-        total: week.length, complaints: complaints.length, feedback: week.length - complaints.length,
+        total: week.length, concerns: concerns.length, feedback: week.length - concerns.length,
         confidential: week.filter((r) => r.is_confidential).length,
-        stillOpen: complaints.filter((r) => OPEN.includes(r.status)).length,
+        stillOpen: concerns.filter((r) => OPEN.includes(r.status)).length,
         resolved, olderOpen: olderOpenAges.length,
         oldestOpenDays: olderOpenAges.length ? Math.max(...olderOpenAges) : 0,
       },
-      trend: trend.map(({ label, complaints, feedback }) => ({ label, complaints, feedback })),
+      trend: trend.map(({ label, concerns, feedback }) => ({ label, concerns, feedback })),
       status, priority, units,
       items: week.slice(0, 50).map((r) => ({
         referenceNo: r.reference_no, type: r.type, status: r.status,

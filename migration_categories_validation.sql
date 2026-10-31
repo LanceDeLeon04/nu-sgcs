@@ -1,12 +1,12 @@
 -- =====================================================================
 -- NUplift: Campus Feedback and Action Portal: migration
---   1. 4 primary categories + sub-categories (complaints)
+--   1. 4 primary categories + sub-categories (concerns)
 --   2. Student ID format   20XX-XXXXXX or 20XX-XXXXXXX (6-7 digits)
 --   3. NU email only       @students.nu-laguna.edu.ph or @nu-laguna.edu.ph
---   4. Offensive-language filter (feedback = blocked, complaints = flagged for staff)
+--   4. Offensive-language filter (feedback = blocked, concerns = flagged for staff)
 --
 -- HOW TO RUN: Supabase Dashboard > SQL Editor > paste this whole file > Run.
--- Safe to run more than once. Existing complaints are re-mapped automatically.
+-- Safe to run more than once. Existing concerns are re-mapped automatically.
 -- =====================================================================
 
 -- ---------------------------------------------------------
@@ -16,7 +16,7 @@ alter table public.gc_complaints add column if not exists subcategory text;
 alter table public.gc_complaints add column if not exists flagged_language boolean not null default false;
 
 -- ---------------------------------------------------------
--- 2. Re-map EXISTING complaints from the old 11 categories to primary + sub-category.
+-- 2. Re-map EXISTING concerns from the old 11 categories to primary + sub-category.
 --    (Feedback rows keep their own category list.) The before-update trigger is paused
 --    so updated_at is not bumped on old records.
 -- ---------------------------------------------------------
@@ -86,7 +86,7 @@ end $$;
 revoke all on function public.gc_has_profanity(text) from public, anon, authenticated;
 
 -- ---------------------------------------------------------
--- 4. Submit complaint: sub-categories, student ID, NU email, language flag
+-- 4. Submit concern: sub-categories, student ID, NU email, language flag
 -- ---------------------------------------------------------
 create or replace function public.gc_submit_complaint(p jsonb)
 returns text language plpgsql security definer set search_path = public as $$
@@ -125,9 +125,9 @@ begin
   if char_length(v_desc) < 20 or char_length(v_desc) > 5000 then
     raise exception 'Description must be between 20 and 5000 characters.';
   end if;
-  -- Formal complaints are trackable and may need a Teams follow-up, so identification is mandatory.
+  -- Formal concerns are trackable and may need a Teams follow-up, so identification is mandatory.
   if v_anon then
-    raise exception 'Formal complaints require identification. To stay anonymous, submit Feedback instead.';
+    raise exception 'Formal concerns require identification. To stay anonymous, submit Feedback instead.';
   end if;
   if v_name is null then raise exception 'Please provide your full name.'; end if;
   if v_student !~ '^20[0-9]{2}-[0-9]{6,7}$' then
@@ -141,7 +141,7 @@ begin
     raise exception 'You can attach up to 3 files.';
   end if;
 
-  -- Complaints are never rejected for strong language (people may need to quote what was said),
+  -- Concerns are never rejected for strong language (people may need to quote what was said),
   -- but staff are alerted with a flag.
   v_flag := public.gc_has_profanity(concat_ws(' ', v_subject, v_desc, p->>'respondent', p->>'desired_outcome'));
 
@@ -178,7 +178,7 @@ begin
 
   insert into public.gc_updates (complaint_id, author_type, author_name, kind, message, is_public)
   values (v_id, 'system', 'System', 'submitted',
-          'Complaint received' || case when v_att_count > 0 then ' with ' || v_att_count || ' attachment(s)' else '' end || '.',
+          'Concern received' || case when v_att_count > 0 then ' with ' || v_att_count || ' attachment(s)' else '' end || '.',
           true);
 
   return v_code;

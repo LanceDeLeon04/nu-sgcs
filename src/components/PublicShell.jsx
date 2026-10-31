@@ -18,7 +18,7 @@ export default function PublicShell({ children, wide = false }) {
           <Link to="/"><Brand /></Link>
           <nav className="flex items-center gap-1">
             <NavLink to="/submit" className={({ isActive }) => `${link} ${isActive ? active : idle}`}>
-              <FilePlus2 size={15} /> <span className="hidden sm:inline">Feedback / Complaint</span><span className="sm:hidden">Submit</span>
+              <FilePlus2 size={15} /> <span className="hidden sm:inline">Feedback / Concern</span><span className="sm:hidden">Submit</span>
             </NavLink>
             <NavLink to="/track" className={({ isActive }) => `${link} ${isActive ? active : idle}`}>
               <Search size={15} /> <span className="hidden sm:inline">Track</span>
