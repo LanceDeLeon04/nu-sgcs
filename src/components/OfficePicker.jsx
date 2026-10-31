@@ -21,6 +21,16 @@ async function loadDirectory() {
   return inflight
 }
 
+// True if this concern is flagged "auto-escalate to director" (e.g. "Dean concern"). Uses the cached directory.
+export async function isEscalationConcern(concernId) {
+  if (!concernId) return false
+  try {
+    const dirs = await loadDirectory()
+    for (const d of dirs) for (const u of d.units) for (const c of u.concerns) if (c.id === concernId) return !!c.escalate
+  } catch { /* unknown -> treat as a normal concern */ }
+  return false
+}
+
 /**
  * Lets a student pick Department > Unit > Concern, or say "I'm not sure" and
  * search every concern across every department with a dynamic, type-ahead search.

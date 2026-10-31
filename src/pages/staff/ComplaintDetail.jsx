@@ -7,7 +7,7 @@ import { supabase, EVIDENCE_BUCKET } from '../../supabaseClient'
 import { useAuth } from '../../lib/auth.jsx'
 import { useConfirm } from '../../lib/confirm.jsx'
 import { STATUSES, COMPLAINT_STATUS_KEYS, FEEDBACK_STATUS_KEYS, PRIORITIES, officeLabel, isUnrouted, fmtDate, fmtDateTime, isOverdue, daysOpen } from '../../lib/constants.js'
-import OfficePicker from '../../components/OfficePicker.jsx'
+import OfficePicker, { isEscalationConcern } from '../../components/OfficePicker.jsx'
 import { notifyByEmail } from '../../lib/email.js'
 import ModeratedField from '../../components/ModeratedField.jsx'
 
@@ -28,6 +28,8 @@ function describe(u) {
   if (u.kind === 'office_forward') return 'Forwarded to office'
   if (u.kind === 'office_update') return 'Update from office'
   if (u.kind === 'office_redirect_request') return 'Office requested redirect'
+  if (u.kind === 'office_reminder') return 'Reminder sent to office'
+  if (u.kind === 'director_escalation') return 'Escalated to director'
   return u.message
 }
 
@@ -55,6 +57,8 @@ export default function ComplaintDetail() {
   const [reassignSel, setReassignSel] = useState({ concern_id: '', office_unsure: false })
   const [reassignBusy, setReassignBusy] = useState(false)
   const [unit, setUnit] = useState(undefined) // undefined = not loaded yet, null = complaint has no unit_id
+  const [prioManual, setPrioManual] = useState(null) // null = unknown (hint hidden)
+  const [escalation, setEscalation] = useState(null) // { at, reason } once escalated to the director
   const [manualEmail, setManualEmail] = useState('')
   const [forwardBusy, setForwardBusy] = useState(false)
 
@@ -68,6 +72,12 @@ export default function ComplaintDetail() {
     if (!comp) { setNotFound(true); return }
     setC(comp); setForwardTo((v) => (v === null ? comp.forwarded_to || '' : v)); setSummary((s) => (s === '' ? comp.resolution_summary || '' : s))
     setUpdates(ups || []); setFiles(att || []); setStaffAll(st || [])
+    supabase.from('gc_complaints').select('priority_manual, director_escalated_at, director_escalation_reason, no_action_escalated_at').eq('id', id).maybeSingle()
+      .then(({ data: pm }) => {
+        setPrioManual(pm ? !!pm.priority_manual : null)
+        setEscalation(pm && (pm.director_escalated_at || pm.no_action_escalated_at)
+          ? { at: pm.no_action_escalated_at || pm.director_escalated_at, reason: pm.director_escalation_reason, noAction: !!pm.no_action_escalated_at } : null)
+      })
     if (comp.unit_id) {
       const { data: u } = await supabase.from('gc_units').select('id, name, email, head_email').eq('id', comp.unit_id).maybeSingle()
       setUnit(u || null)
@@ -166,13 +176,23 @@ export default function ComplaintDetail() {
   const reassign = async () => {
     if (!reassignSel.concern_id) { setErr('Choose a department, unit and concern to move this to.'); return }
     setReassignBusy(true); setErr('')
-    const { data, error } = await supabase.rpc('gc_reassign_complaint', { p_id: id, p_concern_id: reassignSel.concern_id })
+    const movedTo = reassignSel.concern_id
+    const { data, error } = await supabase.rpc('gc_reassign_complaint', { p_id: id, p_concern_id: movedTo })
     setReassignBusy(false)
     if (error) { setErr(error.message); return }
     setReassignOpen(false)
     setReassignSel({ concern_id: '', office_unsure: false })
+    // Moved to an "auto-escalate" concern (e.g. Dean concern)? It goes to the department director, not the unit's office.
+    const toDirector = await isEscalationConcern(movedTo)
+    if (toDirector) {
+      try {
+        await fetch('/api/escalate-to-director', {
+          method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ref: c.tracking_code || c.reference_no }),
+        })
+      } catch { /* the daily job retries it */ }
+    }
     // The new office may already have an email on file — forward automatically.
-    try {
+    if (!toDirector) try {
       const ref = c.tracking_code || c.reference_no
       const { data: fwd } = await supabase.rpc('gc_get_office_forward', { p_ref: ref })
       if (fwd && fwd.to_email && !fwd.already_sent) {
@@ -309,6 +329,13 @@ export default function ComplaintDetail() {
                         </button>
                       </div>
                     </div>
+                  )}
+                  {escalation && (
+                    <p className="mt-2 text-[11px] font-semibold text-orange-800 bg-orange-50 border border-orange-200 rounded-lg px-2.5 py-1.5">
+                      {escalation.noAction
+                        ? `Escalated to the department director on ${fmtDateTime(escalation.at)}: no action from the office for 1 week after 2 reminders.`
+                        : `Escalated to the department director on ${fmtDateTime(escalation.at)}: this concern is escalated automatically. It was not sent to the unit's own office.`}
+                    </p>
                   )}
                   {unit !== undefined && !isUnrouted(c) && c.department_id && (
                     unit && (unit.email || unit.head_email) ? (
@@ -472,7 +499,8 @@ export default function ComplaintDetail() {
               {!locked && !isFeedback && <div><p className={`${lbl} mb-1`}>Priority</p>
                 <select className={sel} value={c.priority} disabled={busy} onChange={(e) => save({ priority: e.target.value })}>
                   {Object.entries(PRIORITIES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
-                </select></div>}
+                </select>
+                {c.concern_id && prioManual !== null && <p className="text-[11px] text-slate-500 mt-1">{prioManual ? 'Set manually by staff.' : 'Set automatically from the concern.'}</p>}</div>}
               {!locked && <div><p className={`${lbl} mb-1`}>Assigned to</p>
                 <select className={sel} value={c.assigned_to || ''} disabled={busy} onChange={(e) => save({ assigned_to: e.target.value || null })}>
                   <option value="">Unassigned</option>

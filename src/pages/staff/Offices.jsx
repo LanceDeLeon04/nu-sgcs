@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import { useConfirm } from '../../lib/confirm.jsx'
-import { Plus, Trash2, Pencil, Check, X, ChevronDown, ChevronRight, Building2, Layers, ListChecks, EyeOff, Eye, Mail, AlertTriangle, Hash } from 'lucide-react'
+import { Plus, Trash2, Pencil, Check, X, ChevronDown, ChevronRight, Building2, Layers, ListChecks, EyeOff, Eye, Mail, AlertTriangle, Hash, ShieldAlert, CalendarOff } from 'lucide-react'
 import Navbar from '../../components/Navbar.jsx'
 import { supabase } from '../../supabaseClient'
+import { PRIORITIES } from '../../lib/constants.js'
 
 const inp = 'border border-slate-200 rounded-lg px-2.5 py-1.5 text-sm outline-none focus:ring-2 focus:ring-nublue-500 bg-white'
 const btn = 'inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg transition'
@@ -134,6 +135,80 @@ function AddRow({ placeholder, onAdd, busy }) {
   )
 }
 
+// Default priority a new case gets when a student picks this concern. Staff can still override it on the case itself.
+function PrioritySelect({ value, onChange, disabled }) {
+  const p = PRIORITIES[value] || PRIORITIES.normal
+  return (
+    <select value={value || 'normal'} disabled={disabled} onChange={(e) => onChange(e.target.value)}
+      title="Priority new cases get automatically when students pick this concern (staff can still change it per case)"
+      className={`text-[11px] font-semibold rounded-full border px-2 py-0.5 outline-none cursor-pointer shrink-0 focus:ring-2 focus:ring-nublue-500 ${p.cls}`}>
+      {Object.entries(PRIORITIES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+    </select>
+  )
+}
+
+function AddConcern({ onAdd, busy }) {
+  const [v, setV] = useState('')
+  const [prio, setPrio] = useState('normal')
+  const submit = (e) => { e.preventDefault(); const t = v.trim(); if (!t) return; onAdd(t, prio); setV(''); setPrio('normal') }
+  return (
+    <form onSubmit={submit} className="flex items-center gap-2 mt-2">
+      <input value={v} onChange={(e) => setV(e.target.value)} placeholder="New concern (e.g. Email concerns)" maxLength={160} className={`${inp} flex-1`} />
+      <PrioritySelect value={prio} onChange={setPrio} />
+      <button type="submit" disabled={busy || !v.trim()} className={`${btn} bg-nublue-600 hover:bg-nublue-700 text-white disabled:opacity-50`}>
+        <Plus size={13} /> Add
+      </button>
+    </form>
+  )
+}
+
+// "Auto-escalate": cases under this concern go straight to the department director (e.g. Dean concern).
+function EscalateToggle({ on, onToggle, disabled }) {
+  return (
+    <button type="button" onClick={onToggle} disabled={disabled}
+      title={on ? 'Auto-escalates to the department director. Click to turn off.' : 'Click to auto-escalate this concern to the department director.'}
+      className={`inline-flex items-center gap-1 text-[10px] font-bold rounded-full border px-1.5 py-0.5 shrink-0 transition disabled:opacity-50 ${on ? 'bg-orange-50 text-orange-700 border-orange-300' : 'bg-white text-slate-300 border-slate-200 hover:text-orange-600 hover:border-orange-300'}`}>
+      <ShieldAlert size={11} /> {on ? 'Director' : ''}
+    </button>
+  )
+}
+
+// Days the reminder job does not count (together with weekends). Philippine national holidays are pre-loaded.
+function Holidays({ rows, onAdd, onDelete, busy }) {
+  const [date, setDate] = useState('')
+  const [name, setName] = useState('')
+  const [showPast, setShowPast] = useState(false)
+  const today = new Date(Date.now() + 8 * 3600 * 1000).toISOString().slice(0, 10)
+  const shown = (rows || []).filter((h) => showPast || h.holiday_date >= today)
+  const submit = (e) => { e.preventDefault(); if (!date || !name.trim()) return; onAdd(date, name.trim()); setDate(''); setName('') }
+  const fmt = (d) => new Date(`${d}T00:00:00`).toLocaleDateString('en-PH', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })
+  return (
+    <div className="mt-5 bg-white rounded-2xl border border-slate-100 card-glow p-4">
+      <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-1 flex items-center gap-1.5"><CalendarOff size={13} /> Holidays</p>
+      <p className="text-[11px] text-slate-500 mb-3">
+        Reminders to offices count <b>business days</b> (Monday to Friday) and skip these dates. Add school closures or newly proclaimed holidays
+        (e.g. Eid&apos;l Fitr / Eid&apos;l Adha 2027) here. Philippine national holidays for 2026 and 2027 are already loaded.
+      </p>
+      <form onSubmit={submit} className="grid sm:grid-cols-[auto_1fr_auto] gap-2 mb-3">
+        <input type="date" value={date} onChange={(e) => setDate(e.target.value)} required className={inp} />
+        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Holiday or closure name" maxLength={120} required className={inp} />
+        <button type="submit" disabled={busy || !date || !name.trim()} className={`${btn} bg-nublue-600 hover:bg-nublue-700 text-white disabled:opacity-50 justify-center`}><Plus size={13} /> Add</button>
+      </form>
+      <div className="divide-y divide-slate-100 border border-slate-100 rounded-xl max-h-72 overflow-y-auto">
+        {shown.length === 0 && <p className="text-xs text-slate-400 px-3 py-3">No upcoming holidays listed.</p>}
+        {shown.map((h) => (
+          <div key={h.holiday_date} className="flex items-center gap-2 px-3 py-1.5 group">
+            <span className="text-xs font-mono text-slate-500 w-40 shrink-0">{fmt(h.holiday_date)}</span>
+            <span className={`text-sm flex-1 truncate ${h.holiday_date < today ? 'text-slate-400' : 'text-slate-800'}`}>{h.name}</span>
+            <button onClick={() => onDelete(h)} disabled={busy} className="text-slate-300 hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition shrink-0"><Trash2 size={13} /></button>
+          </div>
+        ))}
+      </div>
+      <button onClick={() => setShowPast((v) => !v)} className="mt-2 text-[11px] font-semibold text-nublue-600 hover:text-nublue-800">{showPast ? 'Hide past dates' : 'Show past dates'}</button>
+    </div>
+  )
+}
+
 function EditableName({ name, onSave, onDelete, onToggleActive, isActive, busy }) {
   const [editing, setEditing] = useState(false)
   const [v, setV] = useState(name)
@@ -166,19 +241,21 @@ export default function Offices() {
   const [depts, setDepts] = useState(null)
   const [units, setUnits] = useState([])
   const [concerns, setConcerns] = useState([])
+  const [holidays, setHolidays] = useState([])
   const [openDept, setOpenDept] = useState(null)
   const [openUnit, setOpenUnit] = useState(null)
   const [err, setErr] = useState('')
   const [busy, setBusy] = useState(false)
 
   const load = useCallback(async () => {
-    const [{ data: d, error: e1 }, { data: u, error: e2 }, { data: c, error: e3 }] = await Promise.all([
+    const [{ data: d, error: e1 }, { data: u, error: e2 }, { data: c, error: e3 }, { data: h }] = await Promise.all([
       supabase.from('gc_departments').select('*').order('sort_order'),
       supabase.from('gc_units').select('*').order('sort_order'),
       supabase.from('gc_concerns').select('*').order('sort_order'),
+      supabase.from('gc_holidays').select('*').order('holiday_date'),   // table comes from migration_escalation_reminders.sql
     ])
     if (e1 || e2 || e3) { setErr((e1 || e2 || e3).message); return }
-    setDepts(d || []); setUnits(u || []); setConcerns(c || [])
+    setDepts(d || []); setUnits(u || []); setConcerns(c || []); setHolidays(h || [])
   }, [])
   useEffect(() => { load() }, [load])
 
@@ -201,9 +278,9 @@ export default function Offices() {
     if (error) throw error
     load()
   })
-  const addConcern = (unit_id, name) => guard(async () => {
+  const addConcern = (unit_id, name, default_priority = 'normal') => guard(async () => {
     const sort_order = concerns.filter((c) => c.unit_id === unit_id).length + 1
-    const { error } = await supabase.from('gc_concerns').insert({ unit_id, name, sort_order })
+    const { error } = await supabase.from('gc_concerns').insert({ unit_id, name, sort_order, default_priority })
     if (error) throw error
     load()
   })
@@ -217,6 +294,14 @@ export default function Offices() {
     if (error) throw new Error(/gc_units_code_uq|duplicate key/i.test(error.message) ? `The code ${code} is already used by another unit. Pick a different one.` : error.message)
     load()
   })
+  const saveConcernPriority = (id, default_priority) => guard(async () => { const { error } = await supabase.from('gc_concerns').update({ default_priority }).eq('id', id); if (error) throw error; load() })
+  const toggleEscalate = (row) => guard(async () => { const { error } = await supabase.from('gc_concerns').update({ escalate_to_director: !row.escalate_to_director }).eq('id', row.id); if (error) throw error; load() })
+  const addHoliday = (holiday_date, name) => guard(async () => {
+    const { error } = await supabase.from('gc_holidays').insert({ holiday_date, name })
+    if (error) throw new Error(/duplicate key/i.test(error.message) ? 'That date is already in the holiday list.' : error.message)
+    load()
+  })
+  const delHoliday = (row) => guard(async () => { const { error } = await supabase.from('gc_holidays').delete().eq('holiday_date', row.holiday_date); if (error) throw error; load() })
   const renameConcern = (id, name) => guard(async () => { const { error } = await supabase.from('gc_concerns').update({ name }).eq('id', id); if (error) throw error; load() })
 
   const toggleDept = (row) => guard(async () => { const { error } = await supabase.from('gc_departments').update({ is_active: !row.is_active }).eq('id', row.id); if (error) throw error; load() })
@@ -246,6 +331,14 @@ export default function Offices() {
         <p className="text-sm text-slate-500 mb-5">
           This is what students pick on the submission form: Department <ChevronRight size={12} className="inline" /> Unit <ChevronRight size={12} className="inline" /> Concern.
           Hiding an item (the eye icon) removes it from the form without deleting past submissions that used it.
+        </p>
+        <p className="text-sm text-slate-500 mb-5">
+          The colored dropdown beside each concern is its <b>default priority</b>. New complaints automatically get the priority of the concern the student picked
+          (e.g. ID concerns → Low, Computer concerns → Medium). Staff can still change it on the case; changing a default here only affects new cases.
+        </p>
+        <p className="text-sm text-slate-500 mb-5">
+          The <ShieldAlert size={12} className="inline text-orange-600" /> shield marks a concern that <b>escalates automatically to the department director</b> (e.g. Dean concern):
+          the case goes to the director instead of the unit&apos;s own office, and its status becomes Escalated.
         </p>
         {err && <div className="mb-4 text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl px-4 py-2.5">{err}</div>}
 
@@ -303,9 +396,11 @@ export default function Offices() {
                                   <ListChecks size={12} className="text-slate-400 shrink-0" />
                                   <EditableName name={c.name} isActive={c.is_active} busy={busy}
                                     onSave={(v) => renameConcern(c.id, v)} onDelete={() => delConcern(c)} onToggleActive={() => toggleConcern(c)} />
+                                  <EscalateToggle on={c.escalate_to_director} disabled={busy} onToggle={() => toggleEscalate(c)} />
+                                  <PrioritySelect value={c.default_priority} disabled={busy} onChange={(v) => saveConcernPriority(c.id, v)} />
                                 </div>
                               ))}
-                              <div className="pl-4"><AddRow placeholder="New concern (e.g. Email concerns)" busy={busy} onAdd={(name) => addConcern(u.id, name)} /></div>
+                              <div className="pl-4"><AddConcern busy={busy} onAdd={(name, prio) => addConcern(u.id, name, prio)} /></div>
                             </div>
                           )}
                         </div>
@@ -323,6 +418,8 @@ export default function Offices() {
           <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Add a department</p>
           <AddDepartment busy={busy} onAdd={addDept} />
         </div>
+
+        <Holidays rows={holidays} busy={busy} onAdd={addHoliday} onDelete={delHoliday} />
       </div>
     </div>
   )

@@ -3,7 +3,7 @@
 //
 // For each department that received concerns in the last 7 days, sends ONE summary email to
 // that department's director (gc_departments.director_email), including a signed link to the
-// full weekly report with charts (/report/:token). Individual concerns are NEVER forwarded
+// full weekly report with charts (/report/:token). Individual concerns are NOT forwarded here (only automatic escalations, see api/_lib/escalation.js and cron-followups.js, reach a director)
 // to the director.
 //
 // Idempotent: gc_digest_log (department_id, week_start) stops a retried or double-fired cron

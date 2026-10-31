@@ -52,6 +52,19 @@ Needs `SUPABASE_SERVICE_ROLE_KEY` and `CRON_SECRET` set in Vercel's Environment 
 - Feedback detail: record which office it was forwarded to (auto-marks it *Forwarded*), internal notes, assign
 - Assign any item to a specific staff member ("Assign to me" shortcut; filter the list by assignee); admins also manage staff, delete, see tracking codes
 
+**Concern priority:** each concern in *Offices & Concerns* has a default priority dropdown (Low / Medium / High / Urgent).
+New complaints take the priority of the concern the student picked (e.g. ID concerns → Low, Computer concerns → Medium) and staff can
+still override it on the case. See `migration_concern_priority.sql` (it also tags all existing concerns once).
+
+**Director escalation & business-day reminders:** (`migration_escalation_reminders.sql`)
+- A concern flagged **Auto-escalate to director** in *Offices & Concerns* (the shield icon; **Dean concern** is flagged by default in every School unit)
+  is sent to the **department director** instead of the unit's own office. Status becomes *Escalated* and the director gets the secure update link + code.
+  Done server-side by `api/escalate-to-director.js`; the daily job retries any that were missed.
+- Offices are reminded when a forwarded case has had no action for **3 business days** (Mon-Fri, excluding the holidays listed in *Offices & Concerns › Holidays*;
+  Philippine 2026-2027 holidays are pre-loaded; add Eid'l Fitr/Adha 2027 once proclaimed). Nothing is sent on weekends or holidays.
+- After **2 consecutive reminders** with no action (and one more business day), the case is escalated to the director: "no action from the office for 1 week".
+  The tuning knobs are constants at the top of `api/cron-followups.js`.
+
 **Roles:** `admin` and `handler`. Any staff member can assign a complaint or feedback item to any active staff member (or take it themselves);
 admins additionally delete items and manage staff. Being signed in is not enough — an active row in `gc_staff` is required.
 
@@ -72,7 +85,7 @@ before this version are left untouched).
    Environment Variables and redeploy. (Without them the app shows a "Supabase isn't connected" screen.)
 3. **Database** — SQL Editor → paste all of `schema.sql` → Run. This creates every table, function, trigger,
    RLS policy and the `gc-evidence` storage bucket. Then run the migration files in order (each file's own
-   header states the exact order); the most recent is `migration_office_reminders.sql`. Nothing needs deploying
+   header states the exact order); the most recent is `migration_escalation_reminders.sql` (run it after `migration_concern_priority.sql`). Nothing needs deploying
    as Edge Functions — the scheduled job runs as a Vercel Cron hitting a normal serverless route (`api/cron-followups.js`).
    Safe to re-run any of these; they only touch `gc_*` objects.
 4. **First admin** — `schema.sql` already creates a built-in admin: username **`ADMIN_COL`**, password **`COL2026-2027`**

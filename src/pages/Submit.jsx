@@ -11,7 +11,7 @@ import {
   formatStudentId, isValidStudentId, isValidNuEmail, STUDENT_ID_HINT, NU_EMAIL_DOMAIN, NU_EMAIL_HINT,
   DEPARTMENT_NAMES, programsOf,
 } from '../lib/constants.js'
-import OfficePicker from '../components/OfficePicker.jsx'
+import OfficePicker, { isEscalationConcern } from '../components/OfficePicker.jsx'
 import { FeedbackNoticeText, Highlight } from '../components/NoticeText.jsx'
 import { hasProfanityIn } from '../lib/profanity.js'
 import ModeratedField from '../components/ModeratedField.jsx'
@@ -208,10 +208,23 @@ function SubmitForm({ type }) {
           trackUrl: `${window.location.origin}/track/${data}`,
         })
       }
+      // Concerns flagged "auto-escalate" (e.g. Dean concern) go to the department director instead of the
+      // unit's own office. That is done server-side (/api/escalate-to-director); the unit is NOT emailed,
+      // even if this call fails — the daily job retries the escalation.
+      let escalatedToDirector = false
+      if (await isEscalationConcern(f.concern_id)) {
+        escalatedToDirector = true
+        try {
+          await fetch('/api/escalate-to-director', {
+            method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ref: data }),
+          })
+        } catch { /* the daily job will retry */ }
+      }
+
       // Auto-forward to the routed office's email, if one is on file — no
       // manual step needed. If the office has no email yet, this just
       // records that a handler will need to forward it manually.
-      try {
+      if (!escalatedToDirector) try {
         const { data: fwd } = await supabase.rpc('gc_get_office_forward', { p_ref: data })
         if (fwd && fwd.to_email && !fwd.already_sent) {
           notifyByEmail({

@@ -114,7 +114,7 @@ export const OPEN_STATUSES = ['received', 'under_review', 'in_progress', 'escala
 
 export const PRIORITIES = {
   low:    { label: 'Low',    cls: 'bg-slate-100 text-slate-500 border-slate-200' },
-  normal: { label: 'Normal', cls: 'bg-blue-50 text-blue-600 border-blue-200' },
+  normal: { label: 'Medium', cls: 'bg-blue-50 text-blue-600 border-blue-200' },
   high:   { label: 'High',   cls: 'bg-orange-50 text-orange-600 border-orange-200' },
   urgent: { label: 'Urgent', cls: 'bg-red-50 text-red-600 border-red-200' },
 }

@@ -229,11 +229,16 @@ function buildMessage(type, p) {
           <p style="margin:0 0 8px;"><span style="color:#64748b;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;">${escapeHtml(k)}</span><br/><span style="color:#334155;font-size:13.5px;">${nl2br(v)}</span></p>`).join('')
 
     return {
-      subject: `New ${itemLabel} forwarded to ${office} (${p.referenceNo || ''})`,
+      subject: p.escalationNote
+        ? `[Escalated] New ${itemLabel} for your attention (${p.referenceNo || ''})`
+        : `New ${itemLabel} forwarded to ${office} (${p.referenceNo || ''})`,
       html: wrap({
-        eyebrow: `${itemLabel === 'feedback' ? 'Feedback' : 'Complaint'} forwarded`, heading: `A ${itemLabel} was forwarded to ${office}`,
+        eyebrow: p.escalationNote ? `${itemLabel === 'feedback' ? 'Feedback' : 'Complaint'} escalated` : `${itemLabel === 'feedback' ? 'Feedback' : 'Complaint'} forwarded`,
+        heading: p.escalationNote ? `A ${itemLabel} was escalated to you` : `A ${itemLabel} was forwarded to ${office}`,
         bodyHtml: `
-          <p style="margin:0 0 12px;"><b>Notice:</b> The Council of Leaders received a ${itemLabel} routed to your office and is forwarding the full report to you for action.</p>
+          ${p.escalationNote
+            ? `<p style="margin:0 0 12px;padding:10px 14px;background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;color:#9a3412;"><b>Escalated automatically:</b> ${escapeHtml(p.escalationNote)}</p>`
+            : `<p style="margin:0 0 12px;"><b>Notice:</b> The Council of Leaders received a ${itemLabel} routed to your office and is forwarding the full report to you for action.</p>`}
 
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 14px;">
             <tr><td style="background:#f8fafc;border:1px solid #eef2f7;border-radius:10px;padding:14px 16px;">
@@ -275,7 +280,7 @@ function buildMessage(type, p) {
       html: wrap({
         eyebrow: 'Reminder', heading: "This case is still awaiting your office's update",
         bodyHtml: `
-          <p style="margin:0 0 12px;">This is an automatic reminder — it's been at least 3 days since the last update on this case from your side.</p>
+          <p style="margin:0 0 12px;">This is an automatic reminder — it's been at least 3 business days (weekends and holidays not counted) since the last update on this case from your side.</p>
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 16px;">
             <tr><td style="background:#f8fafc;border:1px solid #eef2f7;border-radius:10px;padding:14px 16px;">
               <p style="margin:0 0 4px;color:#64748b;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;">${escapeHtml(p.referenceNo || '')}</p>
@@ -294,7 +299,61 @@ function buildMessage(type, p) {
               <p style="margin:0;color:${NUBLUE_DARK};font-size:22px;font-weight:800;font-family:Consolas,Menlo,monospace;letter-spacing:.08em;">${escapeHtml(p.code || '')}</p>
             </td></tr>
           </table>
-          <p style="margin:14px 0 0;color:#94a3b8;font-size:11.5px;">Reminder #${p.reminderCount || ''} — this will keep repeating every 3 days until the case is resolved.</p>`,
+          ${p.willEscalate ? `<p style="margin:14px 0 0;padding:10px 14px;background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;color:#9a3412;font-size:12.5px;"><b>Final reminder before escalation:</b> if there is still no action on this case, it will be escalated to your department director.</p>` : ''}
+          <p style="margin:14px 0 0;color:#94a3b8;font-size:11.5px;">Reminder #${p.reminderCount || ''} — reminders repeat every 3 business days until the case is resolved.</p>`,
+      }),
+    }
+  }
+
+  if (type === 'director_escalation') {
+    const dept = p.department || 'your department'
+    const itemLabel = p.itemType === 'feedback' ? 'feedback' : 'complaint'
+    if (p.reason === 'concern') {
+      // Same full-detail email the office would have received, with an escalation banner.
+      return buildMessage('office_forward', {
+        ...p,
+        unitName: `${dept} Director`,
+        escalationNote: `This ${itemLabel} was filed under "${p.concern || 'a concern'}", which is escalated straight to the department director instead of the unit's own office (${p.unit || 'the unit'}). The unit was not notified.`,
+      })
+    }
+    // reason === 'no_action': the office ignored two reminders
+    const officeLabel = [p.department, p.unit, p.concern].filter(Boolean).map(escapeHtml).join(' &rsaquo; ')
+    const rows = [
+      ['Forwarded to the office on', p.forwardedOn],
+      ['Last action from the office', p.lastActionOn || 'None'],
+      ['Reminders sent', p.reminderCount ? String(p.reminderCount) : null],
+      ['Latest reminder', p.lastReminderOn],
+    ].filter(([, v]) => v).map(([k, v]) => `
+            <tr>
+              <td style="padding:3px 0;color:#64748b;font-size:12.5px;width:190px;">${escapeHtml(k)}</td>
+              <td style="padding:3px 0;color:#0f172a;font-size:13.5px;font-weight:600;">${escapeHtml(v)}</td>
+            </tr>`).join('')
+    return {
+      subject: `[Escalated] No action from the office for 1 week (${p.referenceNo || ''})`,
+      html: wrap({
+        eyebrow: 'Escalation', heading: 'This case received no action from the office for 1 week',
+        bodyHtml: `
+          <p style="margin:0 0 12px;">The office handling this ${itemLabel} did not respond to <b>${Number(p.reminderCount) || 2} automatic reminders</b>, so it is being escalated to you as department director.</p>
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 14px;">
+            <tr><td style="background:#f8fafc;border:1px solid #eef2f7;border-radius:10px;padding:14px 16px;">
+              <p style="margin:0 0 4px;color:#64748b;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;">${escapeHtml(p.referenceNo || '')}${officeLabel ? ` &middot; ${officeLabel}` : ''}</p>
+              <p style="margin:0 0 10px;color:#0f172a;font-size:14px;font-weight:700;">${escapeHtml(p.subject || '')}</p>
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${rows}</table>
+            </td></tr>
+          </table>
+          <p style="margin:0 0 10px;">You can open the full case with the secure link below, post an update, or change its status.</p>
+          <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 16px;">
+            <tr><td style="background:${NUBLUE};border-radius:8px;">
+              <a href="${escapeHtml(p.officeUrl || '')}" style="display:inline-block;padding:10px 20px;color:#ffffff;font-size:13px;font-weight:700;text-decoration:none;">Open this case &rarr;</a>
+            </td></tr>
+          </table>
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+            <tr><td style="background:#eef4ff;border:1px solid #d9e6ff;border-radius:12px;padding:16px 20px;">
+              <p style="margin:0 0 4px;color:${NUBLUE};font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;">Access code (required on the link above)</p>
+              <p style="margin:0;color:${NUBLUE_DARK};font-size:22px;font-weight:800;font-family:Consolas,Menlo,monospace;letter-spacing:.08em;">${escapeHtml(p.code || '')}</p>
+            </td></tr>
+          </table>
+          <p style="margin:14px 0 0;color:#94a3b8;font-size:11.5px;">Please handle this report confidentially and in line with your office's data-privacy obligations.</p>`,
       }),
     }
   }
