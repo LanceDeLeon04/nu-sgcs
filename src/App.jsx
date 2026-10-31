@@ -5,9 +5,11 @@ import { useAuth } from './lib/auth.jsx'
 import { APP_NAME, APP_SUBTITLE } from './lib/constants.js'
 import StaffSidebar from './components/StaffSidebar.jsx'
 import Footer from './components/Footer.jsx'
+import PrivacyGate from './components/PrivacyGate.jsx'
 import { isConfigured } from './supabaseClient'
 
 import Landing from './pages/Landing.jsx'
+import { Terms, Privacy } from './pages/Legal.jsx'
 import Submit from './pages/Submit.jsx'
 import TrackConcern from './pages/TrackConcern.jsx'
 import OfficeCase from './pages/OfficeCase.jsx'
@@ -56,9 +58,10 @@ function NoAccess() {
 }
 
 function StaffLayout({ children, adminOnly = false }) {
-  const { session, loading, isStaff, isAdmin } = useAuth()
+  const { session, loading, isStaff, isAdmin, privacyOk } = useAuth()
   if (loading) return <LoadingScreen />
   if (!session) return <Navigate to="/staff/login" replace />
+  if (!privacyOk) return <><LoadingScreen /><PrivacyGate /></>
   if (!isStaff) return <NoAccess />
   if (adminOnly && !isAdmin) return <Navigate to="/staff" replace />
   return (
@@ -101,6 +104,8 @@ export default function App() {
       {/* Public — no account needed */}
       <Route path="/" element={<Landing />} />
       <Route path="/submit/:type?" element={<Submit />} />
+      <Route path="/terms" element={<Terms />} />
+      <Route path="/privacy" element={<Privacy />} />
       <Route path="/track/:code?" element={<TrackConcern />} />
       <Route path="/office/:ref" element={<OfficeCase />} />
       <Route path="/report/:token" element={<WeeklyReport />} />

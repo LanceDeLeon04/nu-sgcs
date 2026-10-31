@@ -16,6 +16,7 @@ import { FeedbackNoticeText, Highlight } from '../components/NoticeText.jsx'
 import { hasProfanityIn } from '../lib/profanity.js'
 import ModeratedField from '../components/ModeratedField.jsx'
 import { notifyByEmail } from '../lib/email.js'
+import { TermsLink, PrivacyLink } from '../components/LegalLinks.jsx'
 
 const MAX_FILES = 3
 const MAX_BYTES = 5 * 1024 * 1024
@@ -104,6 +105,8 @@ function SubmitForm({ type }) {
   const [f, setF] = useState(() => loadDraft(type) || blank)
   const [files, setFiles] = useState([])
   const [agree, setAgree] = useState(false)
+  const [agreeTerms, setAgreeTerms] = useState(false)
+  const [agreePrivacy, setAgreePrivacy] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [caseNo, setCaseNo] = useState(null) // public case number, e.g. GC-ACCT-0001
@@ -163,6 +166,8 @@ function SubmitForm({ type }) {
     }
     if (!isConcern && strongLanguage) return setError('Your message contains language that is not allowed. Please rephrase it respectfully and try again.')
     if (!agree) return setError('Please confirm the statement at the bottom of the form.')
+    if (!agreeTerms) return setError('Please agree to the Terms and Conditions to continue.')
+    if (!agreePrivacy) return setError('Please agree to the Data Privacy Notice to continue.')
 
     setBusy(true)
     try {
@@ -494,6 +499,15 @@ function SubmitForm({ type }) {
                 ? 'I confirm that the information above is true to the best of my knowledge, and I understand that a representative may contact me via Microsoft Teams to confirm the details of this report.'
                 : 'I understand that feedback is for filing and reporting only, will be forwarded to the concerned office(s), and will not receive a resolution or trackable actions.'}
             </span>
+          </label>
+
+          <label className="flex items-start gap-3 cursor-pointer mt-3">
+            <input type="checkbox" required checked={agreeTerms} onChange={(e) => setAgreeTerms(e.target.checked)} className="mt-1 accent-[#0033A0]" />
+            <span className="text-sm text-slate-600 leading-relaxed">I agree to the <TermsLink />. <span className="text-red-500">*</span></span>
+          </label>
+          <label className="flex items-start gap-3 cursor-pointer mt-3">
+            <input type="checkbox" required checked={agreePrivacy} onChange={(e) => setAgreePrivacy(e.target.checked)} className="mt-1 accent-[#0033A0]" />
+            <span className="text-sm text-slate-600 leading-relaxed">I agree to the <PrivacyLink />. <span className="text-red-500">*</span></span>
           </label>
 
           {error && <div className="mt-4 text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl px-4 py-2.5">{error}</div>}

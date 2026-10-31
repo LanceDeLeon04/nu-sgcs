@@ -313,3 +313,9 @@ Settings, and Manage Staff via short-lived signed URLs. It is never shown on the
 ## Unit codes and case numbers
 
 Run `migration_unit_codes.sql` (after `migration_evidence_required.sql`). Every unit has an editable code (Offices & Concerns > open a unit > Unit code). New cases are numbered `GC-<UNIT>-0001` (concerns) and `FB-<UNIT>-0001` (feedback), e.g. `GC-ACCT-0001`. Unrouted cases use `UNR`. Old cases keep their old numbers. The private `GC-XXXX-XXXX-XXXX` tracking code is unchanged and is still what the public /track page uses.
+
+## Terms & Data Privacy
+
+- **Staff login:** after every sign-in a *Terms and Data Privacy* dialog (`components/PrivacyGate.jsx`) blocks the staff area until the user ticks the agreement and presses **Agree**. **Disagree** signs them straight out. The agreement is remembered only for that browser session (cleared on sign-in/sign-out).
+- **Submissions:** Feedback and Formal Concern forms each have two required checkboxes — "I agree to the Terms and Conditions" and "I agree to the Data Privacy Notice" — hyperlinked (new tab) to `/terms` and `/privacy`.
+- The wording is in `src/pages/Legal.jsx` (edit there). Links also appear in the footer. Have the NU Data Protection Officer review the text before go-live.

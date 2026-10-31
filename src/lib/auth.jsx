@@ -13,6 +13,12 @@ export function AuthProvider({ children }) {
 
   const userIdRef = useRef(null) // who we have already loaded staff data for
 
+  // Terms + Data Privacy must be agreed to after EVERY sign-in. The flag lives in sessionStorage (survives a
+  // page refresh, but not a new browser session) and is cleared on sign-in and sign-out.
+  const PRIVACY_KEY = 'nuplift_privacy_ok'
+  const readPrivacy = (uid) => { try { return !!uid && sessionStorage.getItem(PRIVACY_KEY) === uid } catch { return false } }
+  const [privacyOk, setPrivacyOk] = useState(false)
+
   const loadStaff = async (userId) => {
     userIdRef.current = userId || null
     if (!userId) { setStaff(null); setStaffReady(true); return }
@@ -24,6 +30,7 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session)
+      setPrivacyOk(readPrivacy(session?.user?.id))
       if (session?.user) await loadStaff(session.user.id)
       setLoading(false)
     })
@@ -40,6 +47,8 @@ export function AuthProvider({ children }) {
         setTimeout(() => loadStaff(uid), 0)
       } else {
         userIdRef.current = null
+        setPrivacyOk(false)
+        try { sessionStorage.removeItem(PRIVACY_KEY) } catch { /* ignore */ }
         setStaff(null)
         setStaffReady(true)
       }
@@ -55,17 +64,27 @@ export function AuthProvider({ children }) {
   }
 
   const signIn = async (identifier, password) => {
+    try { sessionStorage.removeItem(PRIVACY_KEY) } catch { /* ignore */ }
+    setPrivacyOk(false)
     const { error } = await supabase.auth.signInWithPassword({ email: toEmail(identifier), password })
     return { error }
   }
-  const signOut = async () => { await supabase.auth.signOut() }
+  const signOut = async () => {
+    try { sessionStorage.removeItem(PRIVACY_KEY) } catch { /* ignore */ }
+    setPrivacyOk(false)
+    await supabase.auth.signOut()
+  }
+  const acceptPrivacy = () => {
+    try { sessionStorage.setItem(PRIVACY_KEY, session?.user?.id || '') } catch { /* ignore */ }
+    setPrivacyOk(true)
+  }
 
   const isStaff = !!staff?.is_active
   const isAdmin = isStaff && staff.role === 'admin'
 
   return (
     <AuthContext.Provider value={{
-      session, staff, loading: loading || (!!session && !staffReady), isStaff, isAdmin, signIn, signOut,
+      session, staff, loading: loading || (!!session && !staffReady), isStaff, isAdmin, signIn, signOut, privacyOk, acceptPrivacy,
       refreshStaff: () => loadStaff(session?.user?.id),
     }}>
       {children}

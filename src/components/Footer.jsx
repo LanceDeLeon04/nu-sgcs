@@ -1,4 +1,5 @@
 import React from 'react'
+import { Link } from 'react-router-dom'
 
 // Credit footer with the SCS and COL logos side by side. `tone="light"` is for dark/blue backgrounds.
 export default function Footer({ tone = 'dark', className = '' }) {
@@ -14,6 +15,11 @@ export default function Footer({ tone = 'dark', className = '' }) {
         Developed by the School of Computer Studies - Student Council<br />
         for NU Laguna Council of Leaders<br />
         <span className={light ? 'text-white/45' : 'text-slate-300'}>© 2026</span>
+      </p>
+      <p className={`text-[11px] flex items-center gap-2 ${light ? 'text-white/60' : 'text-slate-400'}`}>
+        <Link to="/terms" target="_blank" className="underline hover:text-nublue-600">Terms and Conditions</Link>
+        <span aria-hidden>·</span>
+        <Link to="/privacy" target="_blank" className="underline hover:text-nublue-600">Data Privacy</Link>
       </p>
     </footer>
   )
